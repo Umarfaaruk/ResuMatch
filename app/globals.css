@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Surfaces */
+    --background: 210 40% 98%; /* soft off-white page bg */
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    /* Navy primary */
+    --primary: 217 50% 23%; /* deep navy */
+    --primary-foreground: 210 40% 98%;
+
+    /* Neutral secondary / muted */
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 18%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    /* shadcn "accent" is the subtle hover token (kept neutral) */
+    --accent: 210 40% 94%;
+    --accent-foreground: 222 47% 18%;
+
+    /* Warm brand accent (amber) — used for CTAs, highlights */
+    --warm: 38 92% 50%;
+    --warm-foreground: 28 80% 14%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 38%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 214 26% 89%;
+    --input: 214 26% 89%;
+    --ring: 217 50% 23%;
+
+    --radius: 0.65rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  /* Hide scrollbar for horizontal kanban on mobile while keeping scroll */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
