@@ -75,7 +75,7 @@ export default async function ResumePage() {
 
   const versions: ResumeVersion[] = [
     { key: "ATS", label: "ATS-friendly", text: atsText, serif: true },
-    { key: "Humanized", label: "Humanized", text: humanizedText, serif: false },
+    { key: "Professional", label: "Professional", text: humanizedText, serif: false },
   ];
 
   // A short-lived signed URL to view the originally uploaded file.
@@ -103,8 +103,16 @@ export default async function ResumePage() {
             {parsed.experience_level}
           </span>
         </p>
-        <div className="sm:w-72">
-          <ResumeUploader compact />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/resume/build">
+              <PencilRuler className="h-4 w-4" />
+              Create new resume
+            </Link>
+          </Button>
+          <div className="sm:w-60">
+            <ResumeUploader compact />
+          </div>
         </div>
       </div>
 
