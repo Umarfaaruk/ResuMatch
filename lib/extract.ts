@@ -21,6 +21,7 @@ export function isSupportedType(mime: string, filename: string): boolean {
 }
 
 async function extractPdf(buffer: Buffer): Promise<string> {
+  await import("pdf-parse/worker");
   const { PDFParse } = await import("pdf-parse");
   const parser = new PDFParse({ data: new Uint8Array(buffer) });
   try {
