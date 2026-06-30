@@ -5,13 +5,20 @@ import { buildAtsText, buildHumanizedText } from "./resume-format";
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 const DEFAULT_MODEL = "openai/gpt-oss-20b";
 
-function getClient() {
+/** Shared Groq (OpenAI-compatible) client. Throws if the key is missing. */
+export function getGroqClient() {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     throw new Error("GROQ_API_KEY is not set");
   }
   return new OpenAI({ apiKey, baseURL: GROQ_BASE_URL });
 }
+
+export function getGroqModel() {
+  return process.env.GROQ_MODEL || DEFAULT_MODEL;
+}
+
+const getClient = getGroqClient;
 
 export interface ParseResult {
   parsed: ParsedResume;

@@ -14,6 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MatchRing } from "@/components/MatchRing";
+import { JobAiActions } from "@/components/JobAiActions";
 import { useToast } from "@/components/ui/toast";
 import { upsertApplication } from "@/app/actions/applications";
 import type { MatchedJob, ApplicationStatus } from "@/lib/types";
@@ -147,6 +148,7 @@ export function JobCard({ job, status: initialStatus }: JobCardProps) {
             <Bookmark className="h-4 w-4" />
           )}
         </Button>
+        <JobAiActions job={job} />
       </div>
     </Card>
   );

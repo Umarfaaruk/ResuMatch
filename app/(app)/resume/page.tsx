@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { FileText, Download, Briefcase, GraduationCap, FileSearch } from "lucide-react";
+import {
+  FileText,
+  Download,
+  Briefcase,
+  GraduationCap,
+  FileSearch,
+  PencilRuler,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -29,6 +36,24 @@ export default async function ResumePage() {
         <Card>
           <CardContent className="py-8">
             <ResumeUploader />
+            <div className="my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                or
+              </span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="text-center">
+              <Button asChild variant="outline">
+                <Link href="/resume/build">
+                  <PencilRuler className="h-4 w-4" />
+                  Build one from scratch
+                </Link>
+              </Button>
+              <p className="mt-2 text-sm text-muted-foreground">
+                No resume yet? Answer a few prompts and we&apos;ll generate it.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   FileEdit,
   KanbanSquare,
+  MessageSquareText,
   Menu,
   X,
 } from "lucide-react";
@@ -19,6 +20,7 @@ const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/resume", label: "My Resume", icon: FileEdit },
   { href: "/applications", label: "Applications", icon: KanbanSquare },
+  { href: "/interview", label: "Interview Prep", icon: MessageSquareText },
 ];
 
 interface AppShellProps {

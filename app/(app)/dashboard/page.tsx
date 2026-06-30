@@ -117,7 +117,17 @@ export default async function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <ResumeUploader />
+              <div className="space-y-4">
+                <ResumeUploader />
+                <div className="text-center">
+                  <Link
+                    href="/resume/build"
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    or build a resume from scratch →
+                  </Link>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
