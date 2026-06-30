@@ -13,7 +13,9 @@ import { ResumeUploader } from "@/components/ResumeUploader";
 import { AtsResumePreview } from "@/components/AtsResumePreview";
 import { getActiveResume } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
+import { buildAtsText, buildHumanizedText } from "@/lib/resume-format";
 import type { ParsedResume } from "@/lib/types";
+import type { ResumeVersion } from "@/components/AtsResumePreview";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,22 @@ export default async function ResumePage() {
   }
 
   const parsed = resume.parsed_json as ParsedResume;
+
+  // Build the two downloadable versions, falling back to deterministic
+  // builders for older resumes saved before these fields existed.
+  const atsText =
+    resume.ats_text && resume.ats_text.length > 40
+      ? resume.ats_text
+      : buildAtsText(parsed);
+  const humanizedText =
+    parsed.humanized_text && parsed.humanized_text.length > 40
+      ? parsed.humanized_text
+      : buildHumanizedText(parsed);
+
+  const versions: ResumeVersion[] = [
+    { key: "ATS", label: "ATS-friendly", text: atsText, serif: true },
+    { key: "Humanized", label: "Humanized", text: humanizedText, serif: false },
+  ];
 
   // A short-lived signed URL to view the originally uploaded file.
   let originalUrl: string | null = null;
@@ -172,21 +190,22 @@ export default async function ResumePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <FileText className="h-5 w-5 text-warm" />
-              ATS-optimized resume
+              Optimized resume
             </CardTitle>
             <CardDescription>
-              Clean, single-column, machine-readable. Download as PDF.
+              Switch between the ATS-friendly and humanized versions. Download
+              either as a PDF.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col">
-            {resume.ats_text ? (
+            {versions.length > 0 ? (
               <AtsResumePreview
-                atsText={resume.ats_text}
+                versions={versions}
                 fileLabel={parsed.role_title || "resume"}
               />
             ) : (
               <p className="text-sm text-muted-foreground">
-                No ATS text was generated. Try re-uploading your resume.
+                No resume text was generated. Try re-uploading your resume.
               </p>
             )}
           </CardContent>

@@ -31,6 +31,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# nested duplicate project copy (separate git repo) — not part of this app
+/ResuMatch/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

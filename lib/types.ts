@@ -15,11 +15,26 @@ export interface Profile {
 
 /** Structured resume content returned by the Groq parser. */
 export interface ParsedResume {
+  name?: string;
+  email?: string;
+  phone?: string;
+  location?: string;
+  links?: string[];
+  summary?: string;
   skills: string[];
   experience: ResumeExperience[];
   education: ResumeEducation[];
+  projects?: ResumeProject[];
   role_title: string;
   experience_level: ExperienceLevel;
+  /** Natural, recruiter-friendly rewrite. Stored alongside the ATS text. */
+  humanized_text?: string;
+}
+
+export interface ResumeProject {
+  name: string;
+  description: string;
+  tech: string[];
 }
 
 export interface ResumeExperience {
