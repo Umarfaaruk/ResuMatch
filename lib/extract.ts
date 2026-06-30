@@ -22,6 +22,13 @@ export function isSupportedType(mime: string, filename: string): boolean {
 
 async function extractPdf(buffer: Buffer): Promise<string> {
   const { PDFParse } = await import("pdf-parse");
+  // Preload the pdf.js worker. Harmless when not required, but helps in some
+  // bundled serverless runtimes. Non-fatal if the subpath is unavailable.
+  try {
+    await import("pdf-parse/worker");
+  } catch {
+    /* optional */
+  }
   const parser = new PDFParse({ data: new Uint8Array(buffer) });
   try {
     const result = await parser.getText();
