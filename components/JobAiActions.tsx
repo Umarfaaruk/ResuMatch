@@ -94,11 +94,23 @@ export function JobAiActions({ job }: { job: Job }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => runCover()}>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              // Defer so the menu fully closes before the dialog opens
+              // (prevents Radix leaving pointer-events:none on <body>).
+              e.preventDefault();
+              setTimeout(runCover, 0);
+            }}
+          >
             <FileSignature className="h-4 w-4" />
             Generate cover letter
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => runTailor()}>
+          <DropdownMenuItem
+            onSelect={(e) => {
+              e.preventDefault();
+              setTimeout(runTailor, 0);
+            }}
+          >
             <Wand2 className="h-4 w-4" />
             Tailor my resume to this
           </DropdownMenuItem>

@@ -43,7 +43,11 @@ async function getContext(): Promise<Ctx> {
 }
 
 async function getJob(supabase: ReturnType<typeof createClient>, jobId: string) {
-  const { data } = await supabase.from("jobs").select("*").eq("id", jobId).single();
+  const { data } = await supabase
+    .from("jobs")
+    .select("*")
+    .eq("id", jobId)
+    .maybeSingle();
   return (data as Job) ?? null;
 }
 

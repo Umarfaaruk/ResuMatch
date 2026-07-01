@@ -8,6 +8,7 @@ import {
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
 
@@ -42,7 +43,18 @@ const STEPS = [
   "Browse ranked matches and track applications",
 ];
 
-export default async function LandingPage() {
+export default async function LandingPage({
+  searchParams,
+}: {
+  searchParams: { code?: string };
+}) {
+  // Resilience: if an OAuth code lands on the root (some Supabase Site URL
+  // configs redirect here instead of /auth/callback), forward it to the
+  // callback handler so the session is exchanged instead of silently dropped.
+  if (searchParams?.code) {
+    redirect(`/auth/callback?code=${searchParams.code}&next=/dashboard`);
+  }
+
   const supabase = createClient();
   const {
     data: { user },
