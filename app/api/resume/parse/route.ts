@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { extractResumeText } from "@/lib/extract";
+import { extractResumeText, extractContactHints } from "@/lib/extract";
 import { parseResumeText } from "@/lib/groq";
+import { buildAtsText, buildHumanizedText } from "@/lib/resume-format";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -79,11 +80,52 @@ export async function POST(request: Request) {
     result = await parseResumeText(rawText);
   } catch (err) {
     console.error("Groq parse failed:", err);
+    const msg = err instanceof Error ? err.message : "";
+    if (msg.includes("GROQ_API_KEY")) {
+      return NextResponse.json(
+        {
+          error:
+            "AI parsing needs a Groq API key. Add GROQ_API_KEY to your environment (.env.local locally, or Vercel env vars) and try again.",
+        },
+        { status: 503 }
+      );
+    }
+    if (/401|invalid.*api.*key|unauthor/i.test(msg)) {
+      return NextResponse.json(
+        {
+          error:
+            "Your Groq API key looks invalid. Double-check GROQ_API_KEY and try again.",
+        },
+        { status: 502 }
+      );
+    }
     return NextResponse.json(
       { error: "The AI parser is unavailable right now. Please try again." },
       { status: 502 }
     );
   }
+
+  // 2b) Guarantee personal details: backfill contact from regex over the raw
+  // text (more reliable than the LLM for name/email/phone/links).
+  const hints = extractContactHints(rawText);
+  const p = result.parsed;
+  p.name = p.name || hints.name;
+  p.email = p.email || hints.email;
+  p.phone = p.phone || hints.phone;
+  if (!p.links || p.links.length === 0) p.links = hints.links;
+
+  // Ensure the generated text actually contains the contact details. If the
+  // AI's version is missing them, rebuild deterministically from the now-
+  // complete structured data (which always includes a contact header).
+  let atsText = result.ats_text;
+  if (!p.email || !atsText.includes(p.email)) {
+    atsText = buildAtsText(p);
+  }
+  let humanized = p.humanized_text || "";
+  if (!p.email || !humanized.includes(p.email)) {
+    humanized = buildHumanizedText(p);
+  }
+  p.humanized_text = humanized;
 
   // 3) Save: deactivate previous resumes, insert the new active one.
   await supabase
@@ -97,8 +139,8 @@ export async function POST(request: Request) {
     .insert({
       user_id: user.id,
       original_file_path: filePath,
-      parsed_json: result.parsed,
-      ats_text: result.ats_text,
+      parsed_json: p,
+      ats_text: atsText,
       is_active: true,
     })
     .select("id")
