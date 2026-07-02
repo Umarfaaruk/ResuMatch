@@ -30,12 +30,30 @@ export async function getActiveResume(): Promise<Resume | null> {
 
   if (!data) return null;
 
+  // Repair legacy glyph-interleaving artifacts ("&D&e&s&i&g&n&e&d&") and,
+  // when anything actually changed, persist the cleaned data back so the
+  // stored row is permanently healed (PDF downloads, AI actions, and any
+  // older deployment all read the same row).
   const resume = data as Resume;
+  const patch: { parsed_json?: ParsedResume; ats_text?: string } = {};
   if (resume.parsed_json) {
-    resume.parsed_json = cleanParsedResume(resume.parsed_json as ParsedResume);
+    const cleaned = cleanParsedResume(resume.parsed_json as ParsedResume);
+    if (JSON.stringify(cleaned) !== JSON.stringify(resume.parsed_json)) {
+      patch.parsed_json = cleaned;
+    }
+    resume.parsed_json = cleaned;
   }
   if (resume.ats_text) {
-    resume.ats_text = repairInterleavedText(resume.ats_text);
+    const cleaned = repairInterleavedText(resume.ats_text);
+    if (cleaned !== resume.ats_text) patch.ats_text = cleaned;
+    resume.ats_text = cleaned;
+  }
+  if (Object.keys(patch).length > 0) {
+    await supabase
+      .from("resumes")
+      .update(patch)
+      .eq("id", resume.id)
+      .eq("user_id", user.id);
   }
 
   return resume;

@@ -8,7 +8,7 @@ import {
   type InterviewPrep,
   type TailorResult,
 } from "@/lib/ai";
-import { buildAtsText } from "@/lib/resume-format";
+import { buildAtsText, cleanParsedResume } from "@/lib/resume-format";
 import type { Job, ParsedResume, Resume } from "@/lib/types";
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
@@ -39,7 +39,10 @@ async function getContext(): Promise<Ctx> {
       error: "Add a resume first — upload one or build it on the Resume page.",
     };
   }
-  return { ok: true, supabase, resume: resume as Resume };
+  // Repair legacy glyph-interleaving artifacts before feeding the AI.
+  const cleaned = resume as Resume;
+  cleaned.parsed_json = cleanParsedResume(cleaned.parsed_json as ParsedResume);
+  return { ok: true, supabase, resume: cleaned };
 }
 
 async function getJob(supabase: ReturnType<typeof createClient>, jobId: string) {
