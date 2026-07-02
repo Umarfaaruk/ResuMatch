@@ -60,6 +60,11 @@ export default async function LandingPage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Existing users skip the landing page and go straight to their dashboard.
+  if (user) {
+    redirect("/dashboard");
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Nav */}

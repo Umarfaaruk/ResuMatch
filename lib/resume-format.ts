@@ -48,6 +48,67 @@ const CANONICAL_TERMS: Record<string, string> = {
   map: "mAP", "f1-score": "F1-Score", nosql: "NoSQL", vscode: "VS Code",
 };
 
+// Ordered category buckets for the SKILLS section. First match wins.
+const SKILL_CATEGORIES: { label: string; match: RegExp }[] = [
+  {
+    label: "Languages",
+    match:
+      /^(python|java|c\+\+|c#|c|javascript|js|typescript|ts|php|go|golang|rust|kotlin|swift|r|scala|ruby|sql|html|css|dart)$/,
+  },
+  {
+    label: "AI & Machine Learning",
+    match:
+      /(machine learning|deep learning|supervised|unsupervised|regression|decision tree|random forest|knn|k-nn|svm|naive bayes|cluster|neural|cnn|rnn|lstm|gan|transfer learning|federated|pytorch|tensorflow|keras|scikit|sklearn|xgboost|computer vision|object detection|image classification|yolo|opencv|evaluation metric|^map$|f1|precision|recall|statistics)/,
+  },
+  {
+    label: "NLP & Generative AI",
+    match:
+      /(nlp|llm|language model|prompt|langchain|lang chain|tf-idf|tfidf|embedding|tokeniz|text preprocessing|dify|rag|generative|hugging face|openai|vector database|chatbot)/,
+  },
+  {
+    label: "Frameworks & Libraries",
+    match:
+      /(react|next|node|django|flask|fastapi|streamlit|express|spring|pandas|numpy|matplotlib|seaborn|jquery|tailwind|bootstrap|redux|vue|angular|httpx)/,
+  },
+  {
+    label: "Databases & Cloud",
+    match:
+      /(postgres|mysql|mongo|sqlite|redis|supabase|firebase|firestore|database|aws|azure|gcp|cloud|render|vercel|heroku|docker|kubernetes|etl|airflow)/,
+  },
+  {
+    label: "Tools & Practices",
+    match:
+      /(git|jira|excel|power bi|tableau|linux|vs code|agile|scrum|ci\/cd|test|jest|rest|api|graphql|blockchain|edge computing|data structures|data visualization)/,
+  },
+];
+
+export interface SkillGroup {
+  label: string;
+  skills: string[];
+}
+
+/**
+ * Divide a flat skill list into short, labelled category rows so the SKILLS
+ * section reads as ~6 compact lines instead of a page-long bullet list.
+ * Skills that fit no category are collected under "Other".
+ */
+export function groupSkills(skills: string[]): SkillGroup[] {
+  const groups = new Map<string, string[]>();
+  for (const raw of skills) {
+    const key = raw.trim().toLowerCase();
+    if (!key) continue;
+    const cat =
+      SKILL_CATEGORIES.find((c) => c.match.test(key))?.label ?? "Other";
+    const list = groups.get(cat) ?? [];
+    list.push(formatSkill(raw));
+    groups.set(cat, list);
+  }
+  const order = [...SKILL_CATEGORIES.map((c) => c.label), "Other"];
+  return order
+    .filter((label) => groups.has(label))
+    .map((label) => ({ label, skills: groups.get(label)! }));
+}
+
 /** Professional casing for a skill: canonical tech names, else Title Case. */
 export function formatSkill(skill: string): string {
   const key = skill.trim().toLowerCase();

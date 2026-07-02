@@ -62,8 +62,8 @@ export default async function DashboardPage() {
             </CardTitle>
             <CardDescription>
               {resume
-                ? "Your active resume is parsed and ATS-optimized."
-                : "Upload a resume to unlock matches and an ATS rewrite."}
+                ? "Your active resume is parsed and ATS-optimized. Got a newer version? Upload it to refresh your matches."
+                : "Upload your resume to unlock matches — or build one from scratch."}
             </CardDescription>
           </CardHeader>
           <CardContent>

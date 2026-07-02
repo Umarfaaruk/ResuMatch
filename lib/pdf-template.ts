@@ -2,7 +2,7 @@
 // matching the on-screen resume template — centered serif header, ruled
 // UPPERCASE section headings, right-aligned dates, two-column skills.
 import type { ParsedResume } from "@/lib/types";
-import { formatSkill } from "@/lib/resume-format";
+import { formatSkill, groupSkills } from "@/lib/resume-format";
 
 /** "05/2025 – 07/2025 | Hyderabad, India" → ["05/2025 – 07/2025", "Hyderabad, India"] */
 export function splitDuration(d: string): [string, string] {
@@ -183,23 +183,28 @@ export async function downloadTemplatePdf(
     }
   }
 
-  // ── Skills (two columns) ─────────────────────────────────────────────────
+  // ── Skills (short categorized rows) ──────────────────────────────────────
   if (parsed.skills.length) {
     heading("Skills");
-    const skills = parsed.skills.map(formatSkill);
-    const half = Math.ceil(skills.length / 2);
-    const colX = [M, M + CW / 2 + 8];
-    font("normal", 10.5);
-    for (let row = 0; row < half; row++) {
-      ensure(14);
-      for (const col of [0, 1]) {
-        const s = skills[col * half + row];
-        if (!s) continue;
-        doc.text("•", colX[col] + 2, y);
-        const wrapped: string[] = doc.splitTextToSize(s, CW / 2 - 24);
-        doc.text(wrapped[0], colX[col] + 14, y);
-      }
-      y += 14;
+    for (const g of groupSkills(parsed.skills)) {
+      font("bold", 10.5);
+      const label = `${g.label}: `;
+      const labelW = doc.getTextWidth(label);
+      const wrapped: string[] = doc.splitTextToSize(
+        g.skills.join(", "),
+        CW - labelW
+      );
+      wrapped.forEach((piece, i) => {
+        ensure(14);
+        if (i === 0) {
+          font("bold", 10.5);
+          doc.text(label, M, y);
+        }
+        font("normal", 10.5);
+        doc.text(piece, M + labelW, y);
+        y += 13.5;
+      });
+      y += 2;
     }
   }
 

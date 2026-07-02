@@ -36,6 +36,7 @@ Quality rules:
 - "summary": 3 polished sentences — role focus, strongest skills, and one concrete strength or achievement with real metrics. Write one even if the source lacks it, based only on real content.
 - "experience" highlights: 3-5 strong bullets per role. Rewrite each as a professional accomplishment statement: action verb + what was built + technologies + outcome/impact. Expand terse fragments into full statements; keep every real metric. No trailing periods inconsistency; no bullet characters inside the strings.
 - "projects": include every project with a detailed 1-2 sentence description and its tech list.
+- "skills": concise and deduplicated (aim for 20-25 max). Merge granular variants — e.g. individual metric names (mAP, F1-score, precision, recall) become "model evaluation"; drop generic soft skills and near-duplicates.
 - Include EVERY skill, experience, project, and education entry present in the source. Never drop details.
 - "links": full URLs exactly as they appear in the source (e.g. "https://github.com/user"), never bare usernames.
 - Never invent facts, employers, dates, or numbers that are not in the source.

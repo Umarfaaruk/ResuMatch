@@ -136,7 +136,7 @@ export function ResumeUploader({ compact = false }: ResumeUploaderProps) {
         ) : (
           <>
             <RefreshCw className="h-4 w-4" />
-            Replace resume (PDF / DOCX)
+            Upload updated resume (PDF / DOCX)
           </>
         )}
       </div>

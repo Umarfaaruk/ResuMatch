@@ -1,7 +1,7 @@
 "use client";
 
 import { MapPin, Mail, Phone, Link2 } from "lucide-react";
-import { formatSkill } from "@/lib/resume-format";
+import { formatSkill, groupSkills } from "@/lib/resume-format";
 import { splitDuration, displayUrl } from "@/lib/pdf-template";
 import type { ParsedResume } from "@/lib/types";
 
@@ -18,8 +18,7 @@ export function ResumeTemplate({ parsed }: { parsed: ParsedResume }) {
     ...(parsed.links ?? []).map((l) => ({ icon: Link2, text: displayUrl(l) })),
   ].filter(Boolean) as { icon: typeof MapPin; text: string }[];
 
-  const skills = parsed.skills.map(formatSkill);
-  const half = Math.ceil(skills.length / 2);
+  const skillGroups = groupSkills(parsed.skills);
 
   return (
     <div className="mx-auto max-w-[680px] bg-white px-8 py-10 font-serif text-[13px] leading-relaxed text-neutral-800">
@@ -140,13 +139,16 @@ export function ResumeTemplate({ parsed }: { parsed: ParsedResume }) {
         </Section>
       )}
 
-      {skills.length > 0 && (
+      {skillGroups.length > 0 && (
         <Section title="Skills">
-          <ul className="grid grid-flow-col gap-x-8 gap-y-0.5" style={{ gridTemplateRows: `repeat(${half}, minmax(0, 1fr))` }}>
-            {skills.map((s, i) => (
-              <Bullet key={i}>{s}</Bullet>
+          <div className="space-y-1">
+            {skillGroups.map((g) => (
+              <p key={g.label}>
+                <span className="font-bold text-neutral-900">{g.label}: </span>
+                {g.skills.join(", ")}
+              </p>
             ))}
-          </ul>
+          </div>
         </Section>
       )}
     </div>
