@@ -1,5 +1,5 @@
 import "server-only";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 import { getMatchedJobs } from "@/lib/matching";
 import { getSkillGaps } from "@/lib/resources";
 import { cleanParsedResume, repairInterleavedText } from "@/lib/resume-format";
@@ -15,11 +15,9 @@ import type {
 } from "@/lib/types";
 
 export async function getActiveResume(): Promise<Resume | null> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
+  const supabase = createClient();
 
   const { data } = await supabase
     .from("resumes")
@@ -53,11 +51,9 @@ export async function getAllJobs(): Promise<Job[]> {
 }
 
 export async function getUserApplications(): Promise<Application[]> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) return [];
+  const supabase = createClient();
 
   const { data } = await supabase
     .from("applications")

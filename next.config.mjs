@@ -5,6 +5,12 @@ const nextConfig = {
     // These rely on Node built-ins / large assets and must not be bundled
     // by Next's server compiler — keep them external so they load at runtime.
     serverComponentsExternalPackages: ["pdf-parse", "pdfjs-dist", "mammoth"],
+    // Reuse client-side page cache briefly so back/forward navigation is
+    // instant. Mutations still bust it via revalidatePath/router.refresh.
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
   },
   async headers() {
     return [

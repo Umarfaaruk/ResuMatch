@@ -1,11 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 
 /**
  * Supabase client for Server Components, Server Actions, and Route Handlers.
  * Uses the anon key + the user's session cookies (RLS applies).
+ * Memoized per request so every caller in a render shares one client.
  */
-export function createClient() {
+export const createClient = cache(_createClient);
+
+function _createClient() {
   const cookieStore = cookies();
 
   return createServerClient(
@@ -30,6 +34,19 @@ export function createClient() {
     }
   );
 }
+
+/**
+ * Current user, memoized per request. Pages, layouts, and queries all need
+ * the user; without caching each caller costs a network round-trip to
+ * Supabase Auth — the main source of slow page loads.
+ */
+export const getUser = cache(async () => {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user;
+});
 
 /**
  * Service-role client — SERVER ONLY, bypasses RLS. Used exclusively by the

@@ -26,6 +26,23 @@ export function LoginForm() {
   const [googleLoading, setGoogleLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
 
+  // Surface OAuth callback failures (e.g. Google login couldn't complete the
+  // session exchange) instead of silently landing back on this page.
+  const authError = searchParams.get("error");
+  React.useEffect(() => {
+    if (authError) {
+      toast({
+        title: "Sign-in didn't complete",
+        description:
+          "Google sent you back, but the session couldn't be created. Ask the site owner to add this URL to the Supabase redirect allow-list, then try again.",
+        variant: "error",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authError]);
+
+  // Always redirect back to the origin the user is actually on — an env var
+  // pointing at localhost (or an old deploy URL) silently breaks OAuth.
   const siteUrl =
     (typeof window !== "undefined" ? window.location.origin : "") ||
     process.env.NEXT_PUBLIC_SITE_URL ||
