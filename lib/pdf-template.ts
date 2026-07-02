@@ -24,12 +24,12 @@ export async function downloadTemplatePdf(
   const H = doc.internal.pageSize.getHeight();
   const M = 56;
   const CW = W - M * 2;
-  let y = 66;
+  let y = 50;
 
   const ensure = (needed: number) => {
-    if (y + needed > H - 56) {
+    if (y + needed > H - 45) {
       doc.addPage();
-      y = 64;
+      y = 50;
     }
   };
   const font = (
@@ -71,24 +71,24 @@ export async function downloadTemplatePdf(
   y += 6;
 
   const heading = (label: string) => {
-    ensure(46);
-    y += 12;
+    ensure(38);
+    y += 8;
     font("bold", 12.5);
     doc.text(label.toUpperCase(), M, y);
     doc.setDrawColor(40);
     doc.setLineWidth(1.4);
-    doc.line(M, y + 5, W - M, y + 5);
-    y += 22;
+    doc.line(M, y + 4, W - M, y + 4);
+    y += 18;
   };
 
   const bullet = (text: string) => {
     font("normal", 10.5);
     const wrapped: string[] = doc.splitTextToSize(text, CW - 14);
     wrapped.forEach((piece, i) => {
-      ensure(14);
+      ensure(13);
       if (i === 0) doc.text("•", M + 2, y);
       doc.text(piece, M + 14, y);
-      y += 13.5;
+      y += 12.5;
     });
   };
 
@@ -96,9 +96,9 @@ export async function downloadTemplatePdf(
     font("normal", 10.5);
     const wrapped: string[] = doc.splitTextToSize(text, CW);
     for (const piece of wrapped) {
-      ensure(14);
+      ensure(13);
       doc.text(piece, M, y);
-      y += 13.5;
+      y += 12.5;
     }
   };
 
@@ -112,7 +112,7 @@ export async function downloadTemplatePdf(
   if (parsed.experience.length) {
     heading("Professional Experience");
     for (const e of parsed.experience) {
-      ensure(44);
+      ensure(38);
       const [date, loc] = splitDuration(e.duration);
       font("bold", 11.5);
       doc.text(e.title || "Role", M, y);
@@ -120,7 +120,7 @@ export async function downloadTemplatePdf(
         font("normal", 10.5);
         doc.text(date, W - M, y, { align: "right" });
       }
-      y += 13.5;
+      y += 12.5;
       if (e.company || loc) {
         if (e.company) {
           font("italic", 10.5);
@@ -130,10 +130,10 @@ export async function downloadTemplatePdf(
           font("normal", 10.5);
           doc.text(loc, W - M, y, { align: "right" });
         }
-        y += 13.5;
+        y += 12.5;
       }
       for (const h of e.highlights) bullet(h);
-      y += 7;
+      y += 4;
     }
   }
 
@@ -141,10 +141,10 @@ export async function downloadTemplatePdf(
   if (parsed.projects?.length) {
     heading("Projects");
     for (const pr of parsed.projects) {
-      ensure(32);
+      ensure(28);
       font("bold", 11.5);
       doc.text(pr.name || "Project", M, y);
-      y += 13.5;
+      y += 12.5;
       if (pr.tech?.length) {
         font("italic", 10);
         const techLine: string[] = doc.splitTextToSize(
@@ -152,13 +152,13 @@ export async function downloadTemplatePdf(
           CW
         );
         for (const piece of techLine) {
-          ensure(13);
+          ensure(12);
           doc.text(piece, M, y);
-          y += 12.5;
+          y += 11.5;
         }
       }
       if (pr.description) bullet(pr.description);
-      y += 7;
+      y += 4;
     }
   }
 
@@ -166,20 +166,20 @@ export async function downloadTemplatePdf(
   if (parsed.education.length) {
     heading("Education");
     for (const e of parsed.education) {
-      ensure(30);
+      ensure(26);
       font("bold", 11.5);
       doc.text(e.degree || "Qualification", M, y);
       if (e.year) {
         font("normal", 10.5);
         doc.text(e.year, W - M, y, { align: "right" });
       }
-      y += 13.5;
+      y += 12.5;
       if (e.institution) {
         font("italic", 10.5);
         doc.text(e.institution, M, y);
-        y += 13.5;
+        y += 12.5;
       }
-      y += 4;
+      y += 2;
     }
   }
 
@@ -195,16 +195,16 @@ export async function downloadTemplatePdf(
         CW - labelW
       );
       wrapped.forEach((piece, i) => {
-        ensure(14);
+        ensure(13);
         if (i === 0) {
           font("bold", 10.5);
           doc.text(label, M, y);
         }
         font("normal", 10.5);
         doc.text(piece, M + labelW, y);
-        y += 13.5;
+        y += 12.5;
       });
-      y += 2;
+      y += 1;
     }
   }
 
