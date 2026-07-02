@@ -17,12 +17,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ResumeUploader } from "@/components/ResumeUploader";
-import { AtsResumePreview } from "@/components/AtsResumePreview";
+import { ResumeViews } from "@/components/ResumeViews";
 import { getActiveResume } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
-import { buildAtsText, buildHumanizedText } from "@/lib/resume-format";
+import { buildAtsText } from "@/lib/resume-format";
 import type { ParsedResume } from "@/lib/types";
-import type { ResumeVersion } from "@/components/AtsResumePreview";
 
 export const dynamic = "force-dynamic";
 
@@ -62,27 +61,12 @@ export default async function ResumePage() {
 
   const parsed = resume.parsed_json as ParsedResume;
 
-  // Build the two downloadable versions, falling back to deterministic
-  // builders for older resumes saved before these fields existed.
+  // Plain ATS text, falling back to the deterministic builder for older
+  // resumes saved before this field existed.
   const atsText =
     resume.ats_text && resume.ats_text.length > 40
       ? resume.ats_text
       : buildAtsText(parsed);
-  const humanizedText =
-    parsed.humanized_text && parsed.humanized_text.length > 40
-      ? parsed.humanized_text
-      : buildHumanizedText(parsed);
-
-  const versions: ResumeVersion[] = [
-    { id: "ats", key: "ATS", label: "ATS-friendly", text: atsText, serif: true },
-    {
-      id: "humanized",
-      key: "Professional",
-      label: "Professional",
-      text: humanizedText,
-      serif: false,
-    },
-  ];
 
   // A short-lived signed URL to view the originally uploaded file.
   let originalUrl: string | null = null;
@@ -232,21 +216,17 @@ export default async function ResumePage() {
               Optimized resume
             </CardTitle>
             <CardDescription>
-              Switch between the ATS-friendly and Professional versions, edit
-              any detail in place, then download as a PDF.
+              A professionally formatted resume built from your details.
+              Switch to the plain ATS text for copy-paste portals; edit
+              anything, then download as a PDF.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col">
-            {versions.length > 0 ? (
-              <AtsResumePreview
-                versions={versions}
-                fileLabel={parsed.role_title || "resume"}
-              />
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No resume text was generated. Try re-uploading your resume.
-              </p>
-            )}
+            <ResumeViews
+              parsed={parsed}
+              atsText={atsText}
+              fileLabel={parsed.role_title || "resume"}
+            />
           </CardContent>
         </Card>
       </div>

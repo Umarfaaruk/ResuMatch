@@ -161,23 +161,25 @@ export function AtsResumePreview({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="inline-flex rounded-lg border bg-secondary/60 p-0.5">
-          {versions.map((v, i) => (
-            <button
-              key={v.key}
-              onClick={() => switchVersion(i)}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                i === active
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {v.label}
-            </button>
-          ))}
-        </div>
+      <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+        {versions.length > 1 && (
+          <div className="mr-auto inline-flex rounded-lg border bg-secondary/60 p-0.5">
+            {versions.map((v, i) => (
+              <button
+                key={v.key}
+                onClick={() => switchVersion(i)}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  i === active
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex items-center gap-2">
           {editing ? (
             <>

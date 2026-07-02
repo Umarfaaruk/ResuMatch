@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
 import { buildResume, type BuilderInput } from "@/app/actions/resume";
-import type { ExperienceLevel } from "@/lib/types";
+import type { ExperienceLevel, ParsedResume } from "@/lib/types";
 
 interface ExpRow {
   title: string;
@@ -42,32 +42,58 @@ interface EduRow {
   year: string;
 }
 
-export function ResumeBuilderForm() {
+export function ResumeBuilderForm({
+  initial,
+}: {
+  /** Pre-fill from the active resume so users can edit rather than retype. */
+  initial?: ParsedResume | null;
+}) {
   const router = useRouter();
   const { toast } = useToast();
   const [saving, setSaving] = React.useState(false);
 
-  const [name, setName] = React.useState("");
-  const [email, setEmail] = React.useState("");
-  const [phone, setPhone] = React.useState("");
-  const [location, setLocation] = React.useState("");
-  const [links, setLinks] = React.useState("");
-  const [roleTitle, setRoleTitle] = React.useState("");
-  const [level, setLevel] = React.useState<ExperienceLevel>("fresher");
-  const [summary, setSummary] = React.useState("");
+  const [name, setName] = React.useState(initial?.name ?? "");
+  const [email, setEmail] = React.useState(initial?.email ?? "");
+  const [phone, setPhone] = React.useState(initial?.phone ?? "");
+  const [location, setLocation] = React.useState(initial?.location ?? "");
+  const [links, setLinks] = React.useState((initial?.links ?? []).join(", "));
+  const [roleTitle, setRoleTitle] = React.useState(initial?.role_title ?? "");
+  const [level, setLevel] = React.useState<ExperienceLevel>(
+    initial?.experience_level ?? "fresher"
+  );
+  const [summary, setSummary] = React.useState(initial?.summary ?? "");
 
-  const [skills, setSkills] = React.useState<string[]>([]);
+  const [skills, setSkills] = React.useState<string[]>(initial?.skills ?? []);
   const [skillInput, setSkillInput] = React.useState("");
 
-  const [experience, setExperience] = React.useState<ExpRow[]>([
-    { title: "", company: "", duration: "", highlights: "" },
-  ]);
-  const [projects, setProjects] = React.useState<ProjRow[]>([
-    { name: "", description: "", tech: "" },
-  ]);
-  const [education, setEducation] = React.useState<EduRow[]>([
-    { degree: "", institution: "", year: "" },
-  ]);
+  const [experience, setExperience] = React.useState<ExpRow[]>(
+    initial?.experience?.length
+      ? initial.experience.map((e) => ({
+          title: e.title,
+          company: e.company,
+          duration: e.duration,
+          highlights: e.highlights.join("\n"),
+        }))
+      : [{ title: "", company: "", duration: "", highlights: "" }]
+  );
+  const [projects, setProjects] = React.useState<ProjRow[]>(
+    initial?.projects?.length
+      ? initial.projects.map((p) => ({
+          name: p.name,
+          description: p.description,
+          tech: p.tech.join(", "),
+        }))
+      : [{ name: "", description: "", tech: "" }]
+  );
+  const [education, setEducation] = React.useState<EduRow[]>(
+    initial?.education?.length
+      ? initial.education.map((e) => ({
+          degree: e.degree,
+          institution: e.institution,
+          year: e.year,
+        }))
+      : [{ degree: "", institution: "", year: "" }]
+  );
 
   function addSkillsFrom(value: string) {
     const parts = value
@@ -316,7 +342,7 @@ export function ResumeBuilderForm() {
         </p>
         <Button type="submit" variant="warm" disabled={saving}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {saving ? "Building…" : "Create my resume"}
+          {saving ? "Saving…" : initial ? "Save my resume" : "Create my resume"}
         </Button>
       </div>
     </form>

@@ -1,0 +1,208 @@
+// Client-only: renders a ParsedResume into a professionally formatted PDF
+// matching the on-screen resume template — centered serif header, ruled
+// UPPERCASE section headings, right-aligned dates, two-column skills.
+import type { ParsedResume } from "@/lib/types";
+import { formatSkill } from "@/lib/resume-format";
+
+/** "05/2025 – 07/2025 | Hyderabad, India" → ["05/2025 – 07/2025", "Hyderabad, India"] */
+export function splitDuration(d: string): [string, string] {
+  const [date = "", loc = ""] = (d ?? "").split("|").map((s) => s.trim());
+  return [date, loc];
+}
+
+export function displayUrl(u: string): string {
+  return u.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "");
+}
+
+export async function downloadTemplatePdf(
+  parsed: ParsedResume,
+  filename: string
+) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const M = 56;
+  const CW = W - M * 2;
+  let y = 66;
+
+  const ensure = (needed: number) => {
+    if (y + needed > H - 56) {
+      doc.addPage();
+      y = 64;
+    }
+  };
+  const font = (
+    style: "normal" | "bold" | "italic" | "bolditalic",
+    size: number
+  ) => {
+    doc.setFont("times", style);
+    doc.setFontSize(size);
+  };
+
+  // ── Header ────────────────────────────────────────────────────────────────
+  font("bold", 24);
+  doc.text(parsed.name?.trim() || parsed.role_title || "Resume", W / 2, y, {
+    align: "center",
+  });
+  y += 20;
+  if (parsed.name?.trim() && parsed.role_title) {
+    font("italic", 13);
+    doc.text(parsed.role_title, W / 2, y, { align: "center" });
+    y += 17;
+  }
+  const contact = [
+    parsed.location,
+    parsed.email,
+    parsed.phone,
+    ...(parsed.links ?? []).map(displayUrl),
+  ]
+    .map((s) => (s ?? "").trim())
+    .filter(Boolean)
+    .join("   |   ");
+  if (contact) {
+    font("normal", 10);
+    const wrapped: string[] = doc.splitTextToSize(contact, CW);
+    for (const line of wrapped) {
+      doc.text(line, W / 2, y, { align: "center" });
+      y += 13;
+    }
+  }
+  y += 6;
+
+  const heading = (label: string) => {
+    ensure(46);
+    y += 12;
+    font("bold", 12.5);
+    doc.text(label.toUpperCase(), M, y);
+    doc.setDrawColor(40);
+    doc.setLineWidth(1.4);
+    doc.line(M, y + 5, W - M, y + 5);
+    y += 22;
+  };
+
+  const bullet = (text: string) => {
+    font("normal", 10.5);
+    const wrapped: string[] = doc.splitTextToSize(text, CW - 14);
+    wrapped.forEach((piece, i) => {
+      ensure(14);
+      if (i === 0) doc.text("•", M + 2, y);
+      doc.text(piece, M + 14, y);
+      y += 13.5;
+    });
+  };
+
+  const paragraph = (text: string) => {
+    font("normal", 10.5);
+    const wrapped: string[] = doc.splitTextToSize(text, CW);
+    for (const piece of wrapped) {
+      ensure(14);
+      doc.text(piece, M, y);
+      y += 13.5;
+    }
+  };
+
+  // ── Summary ──────────────────────────────────────────────────────────────
+  if (parsed.summary?.trim()) {
+    heading("Summary");
+    paragraph(parsed.summary.trim());
+  }
+
+  // ── Experience ───────────────────────────────────────────────────────────
+  if (parsed.experience.length) {
+    heading("Professional Experience");
+    for (const e of parsed.experience) {
+      ensure(44);
+      const [date, loc] = splitDuration(e.duration);
+      font("bold", 11.5);
+      doc.text(e.title || "Role", M, y);
+      if (date) {
+        font("normal", 10.5);
+        doc.text(date, W - M, y, { align: "right" });
+      }
+      y += 13.5;
+      if (e.company || loc) {
+        if (e.company) {
+          font("italic", 10.5);
+          doc.text(e.company, M, y);
+        }
+        if (loc) {
+          font("normal", 10.5);
+          doc.text(loc, W - M, y, { align: "right" });
+        }
+        y += 13.5;
+      }
+      for (const h of e.highlights) bullet(h);
+      y += 7;
+    }
+  }
+
+  // ── Projects ─────────────────────────────────────────────────────────────
+  if (parsed.projects?.length) {
+    heading("Projects");
+    for (const pr of parsed.projects) {
+      ensure(32);
+      font("bold", 11.5);
+      doc.text(pr.name || "Project", M, y);
+      y += 13.5;
+      if (pr.tech?.length) {
+        font("italic", 10);
+        const techLine: string[] = doc.splitTextToSize(
+          pr.tech.map(formatSkill).join(", "),
+          CW
+        );
+        for (const piece of techLine) {
+          ensure(13);
+          doc.text(piece, M, y);
+          y += 12.5;
+        }
+      }
+      if (pr.description) bullet(pr.description);
+      y += 7;
+    }
+  }
+
+  // ── Education ────────────────────────────────────────────────────────────
+  if (parsed.education.length) {
+    heading("Education");
+    for (const e of parsed.education) {
+      ensure(30);
+      font("bold", 11.5);
+      doc.text(e.degree || "Qualification", M, y);
+      if (e.year) {
+        font("normal", 10.5);
+        doc.text(e.year, W - M, y, { align: "right" });
+      }
+      y += 13.5;
+      if (e.institution) {
+        font("italic", 10.5);
+        doc.text(e.institution, M, y);
+        y += 13.5;
+      }
+      y += 4;
+    }
+  }
+
+  // ── Skills (two columns) ─────────────────────────────────────────────────
+  if (parsed.skills.length) {
+    heading("Skills");
+    const skills = parsed.skills.map(formatSkill);
+    const half = Math.ceil(skills.length / 2);
+    const colX = [M, M + CW / 2 + 8];
+    font("normal", 10.5);
+    for (let row = 0; row < half; row++) {
+      ensure(14);
+      for (const col of [0, 1]) {
+        const s = skills[col * half + row];
+        if (!s) continue;
+        doc.text("•", colX[col] + 2, y);
+        const wrapped: string[] = doc.splitTextToSize(s, CW / 2 - 24);
+        doc.text(wrapped[0], colX[col] + 14, y);
+      }
+      y += 14;
+    }
+  }
+
+  const safe = filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  doc.save(`${safe}.pdf`);
+}
