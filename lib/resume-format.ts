@@ -18,6 +18,47 @@ function titleCase(s: string): string {
   return s.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Tech terms that must keep their canonical casing in a professional resume.
+const CANONICAL_TERMS: Record<string, string> = {
+  sql: "SQL", mysql: "MySQL", postgresql: "PostgreSQL", mongodb: "MongoDB",
+  html: "HTML", css: "CSS", js: "JavaScript", javascript: "JavaScript",
+  typescript: "TypeScript", php: "PHP", api: "API", "rest api": "REST API",
+  rest: "REST", graphql: "GraphQL", json: "JSON", aws: "AWS", gcp: "GCP",
+  ai: "AI", ml: "ML", nlp: "NLP", llm: "LLM", llms: "LLMs", cnn: "CNN",
+  rnn: "RNN", lstm: "LSTM", gan: "GAN", svm: "SVM", knn: "KNN",
+  "k-nn": "KNN", "tf-idf": "TF-IDF", tfidf: "TF-IDF", etl: "ETL",
+  "ci/cd": "CI/CD", cicd: "CI/CD", ui: "UI", ux: "UX", "ui/ux": "UI/UX",
+  ios: "iOS", node: "Node.js", "node.js": "Node.js", "node js": "Node.js",
+  nodejs: "Node.js", "next.js": "Next.js", "next js": "Next.js",
+  nextjs: "Next.js", react: "React", redux: "Redux", vue: "Vue.js",
+  angular: "Angular", python: "Python", java: "Java", "c++": "C++",
+  "c#": "C#", git: "Git", github: "GitHub", gitlab: "GitLab",
+  docker: "Docker", kubernetes: "Kubernetes", linux: "Linux",
+  pytorch: "PyTorch", tensorflow: "TensorFlow", keras: "Keras",
+  "scikit-learn": "scikit-learn", "scikit learn": "scikit-learn",
+  sklearn: "scikit-learn", numpy: "NumPy", pandas: "Pandas",
+  matplotlib: "Matplotlib", opencv: "OpenCV", fastapi: "FastAPI",
+  django: "Django", flask: "Flask", streamlit: "Streamlit",
+  tailwind: "Tailwind CSS", jquery: "jQuery", firebase: "Firebase",
+  supabase: "Supabase", langchain: "LangChain", openai: "OpenAI",
+  huggingface: "Hugging Face", "power bi": "Power BI", excel: "Excel",
+  tableau: "Tableau", airflow: "Airflow", redis: "Redis", jest: "Jest",
+  yolo: "YOLO", xgboost: "XGBoost", yolov11: "YOLOv11", yolov8: "YOLOv8",
+  "lang chain": "LangChain", "dify.ai": "Dify.ai", httpx: "HTTPX",
+  map: "mAP", "f1-score": "F1-Score", nosql: "NoSQL", vscode: "VS Code",
+};
+
+/** Professional casing for a skill: canonical tech names, else Title Case. */
+export function formatSkill(skill: string): string {
+  const key = skill.trim().toLowerCase();
+  if (CANONICAL_TERMS[key]) return CANONICAL_TERMS[key];
+  // Multi-word skills: fix each word that has a canonical form.
+  return key
+    .split(/\s+/)
+    .map((w) => CANONICAL_TERMS[w] ?? titleCase(w))
+    .join(" ");
+}
+
 function header(p: ParsedResume, lines: string[]) {
   // Name (falls back to the target role so the document never starts headless).
   const hasName = !!(p.name && p.name.trim());
@@ -31,7 +72,7 @@ function header(p: ParsedResume, lines: string[]) {
 
 function fallbackSummary(p: ParsedResume): string {
   const role = (p.role_title || "professional").toLowerCase();
-  const top = p.skills.slice(0, 5).join(", ");
+  const top = p.skills.slice(0, 5).map(formatSkill).join(", ");
   const lvl =
     p.experience_level === "fresher"
       ? "an enthusiastic entry-level"
@@ -51,7 +92,7 @@ export function buildAtsText(p: ParsedResume): string {
   lines.push("SUMMARY", (p.summary?.trim() || fallbackSummary(p)), "");
 
   if (p.skills.length) {
-    lines.push("SKILLS", p.skills.map(titleCase).join(", "), "");
+    lines.push("SKILLS", p.skills.map(formatSkill).join(", "), "");
   }
 
   if (p.experience.length) {
@@ -69,7 +110,7 @@ export function buildAtsText(p: ParsedResume): string {
     lines.push("PROJECTS");
     for (const pr of p.projects) {
       const head = pr.tech?.length
-        ? `${pr.name} (${pr.tech.join(", ")})`
+        ? `${pr.name} (${pr.tech.map(formatSkill).join(", ")})`
         : pr.name;
       if (head) lines.push(head);
       if (pr.description) lines.push(`- ${pr.description}`);
@@ -102,7 +143,7 @@ export function buildHumanizedText(p: ParsedResume): string {
   );
 
   if (p.skills.length) {
-    lines.push("TECHNICAL SKILLS", p.skills.map(titleCase).join("  •  "), "");
+    lines.push("TECHNICAL SKILLS", p.skills.map(formatSkill).join("  •  "), "");
   }
 
   if (p.experience.length) {
@@ -120,7 +161,9 @@ export function buildHumanizedText(p: ParsedResume): string {
     lines.push("PROJECTS");
     for (const pr of p.projects) {
       lines.push(
-        pr.tech?.length ? `${pr.name}  |  ${pr.tech.join(", ")}` : pr.name
+        pr.tech?.length
+          ? `${pr.name}  |  ${pr.tech.map(formatSkill).join(", ")}`
+          : pr.name
       );
       if (pr.description) lines.push(`• ${pr.description}`);
       lines.push("");

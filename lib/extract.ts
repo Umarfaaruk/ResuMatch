@@ -82,6 +82,20 @@ export function extractContactHints(raw: string): ContactHints {
   return { name, email, phone, links };
 }
 
+/**
+ * Repair glyph-interleaved extraction artifacts. Some PDF exporters emit
+ * every character as its own glyph joined by '&' (or a similar separator),
+ * so "Designed" comes out as "&D&e&s&i&g&n&e&d&". Collapse any run of
+ * single characters separated by '&' back into the intended word. Legit
+ * uses like "R&D" or "Q&A" have only one separator and are left alone.
+ */
+export function repairInterleavedText(text: string): string {
+  return text
+    .replace(/&?(?:[^\s&]&){2,}[^\s&]?&?/g, (m) => m.replace(/&/g, ""))
+    // Single-char leftovers of the same artifact, e.g. "&-&" → "-".
+    .replace(/(^|\s)&([^\s&])&(?=\s|$)/gm, "$1$2");
+}
+
 /** Extract raw text from a resume file buffer based on its name/mime. */
 export async function extractResumeText(
   buffer: Buffer,
@@ -103,5 +117,8 @@ export async function extractResumeText(
     }
   }
 
-  return text.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return repairInterleavedText(text)
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }

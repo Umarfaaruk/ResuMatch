@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import type { ParsedResume, ExperienceLevel } from "./types";
 import { buildAtsText, buildHumanizedText } from "./resume-format";
+import { repairInterleavedText } from "./extract";
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 const DEFAULT_MODEL = "openai/gpt-oss-20b";
@@ -27,24 +28,17 @@ export interface ParseResult {
 
 const SYSTEM_PROMPT = `You are an expert technical recruiter and resume writer specializing in ATS (Applicant Tracking System) optimization for entry-level candidates in India.
 
-You will receive the raw text of a candidate's resume. Extract structured data AND produce two rewritten versions.
+You will receive the raw text of a candidate's resume. Extract COMPLETE, polished structured data (the app renders the final resume from it).
 
-Both versions must be COMPLETE, submission-ready resumes a candidate could send to an employer as-is. Always include:
-- Line 1: candidate's full name. Line 2: contact details joined by "  |  " (email, phone, location, links) — include whatever is present.
-- A SUMMARY section (write a strong 2-3 sentence one even if the source lacks it, based only on real content).
-- SKILLS, EXPERIENCE (with company, title, dates, and quantified bullets), PROJECTS, and EDUCATION — include every section that has content. Never drop details that exist in the source.
+The raw text may contain extraction artifacts (stray '&' between letters, broken words, jumbled line order). Silently reconstruct the intended words and sentences — never copy garbled text into your output.
+
+Quality rules:
+- "summary": 3 polished sentences — role focus, strongest skills, and one concrete strength or achievement with real metrics. Write one even if the source lacks it, based only on real content.
+- "experience" highlights: 3-5 strong bullets per role. Rewrite each as a professional accomplishment statement: action verb + what was built + technologies + outcome/impact. Expand terse fragments into full statements; keep every real metric. No trailing periods inconsistency; no bullet characters inside the strings.
+- "projects": include every project with a detailed 1-2 sentence description and its tech list.
+- Include EVERY skill, experience, project, and education entry present in the source. Never drop details.
+- "links": full URLs exactly as they appear in the source (e.g. "https://github.com/user"), never bare usernames.
 - Never invent facts, employers, dates, or numbers that are not in the source.
-
-Rules for "ats_text" (machine-readable):
-- Single column. No tables, no columns, no graphics. Use "- " for bullets.
-- Clear UPPERCASE headings: SUMMARY, SKILLS, EXPERIENCE, PROJECTS, EDUCATION.
-
-Rules for "humanized_text" (professional, recruiter-friendly):
-- The SAME complete content and all sections, but polished and naturally worded (not keyword-stuffed).
-- Use professional UPPERCASE headings: PROFESSIONAL SUMMARY, TECHNICAL SKILLS, PROFESSIONAL EXPERIENCE, PROJECTS, EDUCATION. Use "•" for bullets. No casual/slang headings.
-- Plain text only; no tables or graphics.
-
-BOTH "ats_text" and "humanized_text" are REQUIRED, must be non-empty, and are the two longest fields in your output.
 
 Return STRICT JSON only (no markdown, no commentary) matching exactly this shape:
 {
@@ -53,15 +47,13 @@ Return STRICT JSON only (no markdown, no commentary) matching exactly this shape
   "phone": string,
   "location": string,
   "links": string[],
-  "summary": string,                 // 2-3 sentence professional summary
+  "summary": string,
   "skills": string[],                // deduplicated technical & relevant skills, lowercase
   "experience": [{ "title": string, "company": string, "duration": string, "highlights": string[] }],
   "projects": [{ "name": string, "description": string, "tech": string[] }],
   "education": [{ "degree": string, "institution": string, "year": string }],
   "role_title": string,              // single best-fit target job title, e.g. "Frontend Developer"
-  "experience_level": "fresher" | "junior" | "mid",  // freshers <1y, junior 1-2y, mid 3y+
-  "ats_text": string,                // full ATS-safe resume, plain text with \n line breaks
-  "humanized_text": string           // full humanized resume, plain text with \n line breaks
+  "experience_level": "fresher" | "junior" | "mid"   // freshers <1y, junior 1-2y, mid 3y+
 }`;
 
 const ALLOWED_LEVELS: ExperienceLevel[] = ["fresher", "junior", "mid"];
@@ -71,13 +63,17 @@ export async function parseResumeText(rawText: string): Promise<ParseResult> {
   const client = getClient();
   const model = process.env.GROQ_MODEL || DEFAULT_MODEL;
 
-  // Guard against very long inputs blowing the context window.
-  const trimmed = rawText.slice(0, 24000);
+  // Keep input + completion inside Groq's free-tier 8k tokens-per-minute
+  // budget: ~10k chars of resume (~2.5k tokens) + prompt + 4k completion.
+  // The model returns structured data only (the resume texts are rendered
+  // deterministically from it), but gpt-oss models also spend completion
+  // tokens on hidden reasoning, so the cap needs headroom.
+  const trimmed = rawText.slice(0, 10000);
 
   const completion = await client.chat.completions.create({
     model,
     temperature: 0.2,
-    max_tokens: 8000,
+    max_tokens: 4000,
     response_format: { type: "json_object" },
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
@@ -121,12 +117,12 @@ function asStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
   return v
     .filter((x): x is string => typeof x === "string")
-    .map((s) => s.trim())
+    .map((s) => repairInterleavedText(s).trim())
     .filter(Boolean);
 }
 
 function str(v: unknown): string {
-  return typeof v === "string" ? v.trim() : "";
+  return typeof v === "string" ? repairInterleavedText(v).trim() : "";
 }
 
 function normalizeResult(data: Record<string, unknown>): ParseResult {
@@ -182,15 +178,11 @@ function normalizeResult(data: Record<string, unknown>): ParseResult {
     experience_level,
   };
 
-  // Prefer the model's prose, but fall back to deterministic builders so the
-  // UI is never empty (the AI sometimes leaves these long fields blank).
-  let ats_text = str(data.ats_text);
-  if (ats_text.length < 80) ats_text = buildAtsText(parsed);
-
-  let humanized_text = str(data.humanized_text);
-  if (humanized_text.length < 80) humanized_text = buildHumanizedText(parsed);
-
-  parsed.humanized_text = humanized_text;
+  // Render both resume versions deterministically from the structured data.
+  // This guarantees a complete document (contact header, formatted skills,
+  // every section) and keeps the AI completion small enough for free tiers.
+  const ats_text = buildAtsText(parsed);
+  parsed.humanized_text = buildHumanizedText(parsed);
 
   return { parsed, ats_text };
 }

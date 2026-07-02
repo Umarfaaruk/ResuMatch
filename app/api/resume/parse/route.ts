@@ -90,6 +90,15 @@ export async function POST(request: Request) {
         { status: 503 }
       );
     }
+    if (/rate.?limit|too large|413|429/i.test(msg)) {
+      return NextResponse.json(
+        {
+          error:
+            "The free AI tier is briefly rate-limited. Wait a minute and try again.",
+        },
+        { status: 429 }
+      );
+    }
     if (/401|invalid.*api.*key|unauthor/i.test(msg)) {
       return NextResponse.json(
         {
@@ -112,27 +121,16 @@ export async function POST(request: Request) {
   p.name = p.name || hints.name;
   p.email = p.email || hints.email;
   p.phone = p.phone || hints.phone;
-  if (!p.links || p.links.length === 0) p.links = hints.links;
+  // Prefer regex-extracted links: they are full URLs, while the model
+  // sometimes returns bare usernames.
+  const modelLinksAreUrls = (p.links ?? []).some((l) => l.includes("."));
+  if (hints.links.length > 0 && !modelLinksAreUrls) p.links = hints.links;
+  else if (!p.links || p.links.length === 0) p.links = hints.links;
 
-  // Ensure the generated text actually contains the personal details (name,
-  // email, phone). If the AI's version dropped any of them, rebuild
-  // deterministically from the now-complete structured data (which always
-  // includes a full contact header).
-  const digits = (s: string) => s.replace(/\D/g, "");
-  const hasAllDetails = (t: string) =>
-    (!p.name || t.toLowerCase().includes(p.name.trim().toLowerCase())) &&
-    (!p.email || t.includes(p.email)) &&
-    (!p.phone || digits(t).includes(digits(p.phone)));
-
-  let atsText = result.ats_text;
-  if (!p.email || !hasAllDetails(atsText)) {
-    atsText = buildAtsText(p);
-  }
-  let humanized = p.humanized_text || "";
-  if (!p.email || !hasAllDetails(humanized)) {
-    humanized = buildHumanizedText(p);
-  }
-  p.humanized_text = humanized;
+  // Re-render both versions now that the contact details are complete — the
+  // deterministic builders always include the full contact header.
+  const atsText = buildAtsText(p);
+  p.humanized_text = buildHumanizedText(p);
 
   // 3) Save: deactivate previous resumes, insert the new active one.
   await supabase
