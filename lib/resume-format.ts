@@ -281,6 +281,7 @@ export function cleanParsedResume(p: ParsedResume): ParsedResume {
     ...p,
     name: cleanStr(p.name),
     email: cleanStr(p.email),
+    humanized_text: cleanStr(p.humanized_text),
     phone: cleanStr(p.phone),
     location: cleanStr(p.location),
     links: cleanArr(p.links),

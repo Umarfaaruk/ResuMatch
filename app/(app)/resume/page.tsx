@@ -28,6 +28,10 @@ export const dynamic = "force-dynamic";
 export default async function ResumePage() {
   const resume = await getActiveResume();
 
+  console.log("=== SERVER SIDE RESUME DATA ===");
+  console.log(resume ? JSON.stringify(resume.parsed_json, null, 2) : "NO RESUME FOUND");
+  console.log("===============================");
+
   if (!resume || !resume.parsed_json) {
     return (
       <div className="space-y-6">
