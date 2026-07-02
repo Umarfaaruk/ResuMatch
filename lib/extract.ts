@@ -1,6 +1,7 @@
 // Server-only resume text extraction. Uses pdf-parse (v2 class API) for PDFs
 // and mammoth for DOCX. Keep this out of client bundles.
 import "server-only";
+import { repairInterleavedText } from "./resume-format";
 
 async function extractPdf(buffer: Buffer): Promise<string> {
   const { PDFParse } = await import("pdf-parse");
@@ -81,16 +82,6 @@ export function extractContactHints(raw: string): ContactHints {
 
   return { name, email, phone, links };
 }
-
-/**
- * Repair glyph-interleaved extraction artifacts. Some PDF exporters emit
- * every character as its own glyph joined by '&' (or a similar separator),
- * so "Designed" comes out as "&D&e&s&i&g&n&e&d&". Collapse any run of
- * single characters separated by '&' back into the intended word. Legit
- * uses like "R&D" or "Q&A" have only one separator and are left alone.
- */
-import { repairInterleavedText } from "./resume-format";
-export { repairInterleavedText };
 
 /** Extract raw text from a resume file buffer based on its name/mime. */
 export async function extractResumeText(
