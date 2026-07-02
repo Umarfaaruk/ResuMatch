@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getMatchedJobs } from "@/lib/matching";
 import { getSkillGaps } from "@/lib/resources";
+import { cleanParsedResume, repairInterleavedText } from "@/lib/resume-format";
 import type {
   Application,
   ApplicationStatus,
@@ -29,7 +30,17 @@ export async function getActiveResume(): Promise<Resume | null> {
     .limit(1)
     .maybeSingle();
 
-  return (data as Resume) ?? null;
+  if (!data) return null;
+
+  const resume = data as Resume;
+  if (resume.parsed_json) {
+    resume.parsed_json = cleanParsedResume(resume.parsed_json as ParsedResume);
+  }
+  if (resume.ats_text) {
+    resume.ats_text = repairInterleavedText(resume.ats_text);
+  }
+
+  return resume;
 }
 
 export async function getAllJobs(): Promise<Job[]> {

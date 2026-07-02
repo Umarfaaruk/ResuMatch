@@ -243,3 +243,66 @@ export function buildHumanizedText(p: ParsedResume): string {
 
   return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
+
+/**
+ * Repair glyph-interleaved extraction artifacts. Some PDF exporters emit
+ * every character as its own glyph joined by '&' (or a similar separator),
+ * so "Designed" comes out as "&D&e&s&i&g&n&e&d&". Collapse any run of
+ * single characters separated by '&' back into the intended word. Legit
+ * uses like "R&D" or "Q&A" have only one separator and are left alone.
+ */
+export function repairInterleavedText(text: string): string {
+  if (!text) return "";
+  return text
+    .split("\n")
+    .map((line) => {
+      return line
+        .split(" ")
+        .map((word) => {
+          const ampersandCount = (word.match(/&/g) || []).length;
+          if (ampersandCount >= 2) {
+            return word.replace(/&/g, "");
+          }
+          if (word.startsWith("&") && word.endsWith("&") && word.length > 2) {
+            return word.replace(/&/g, "");
+          }
+          return word;
+        })
+        .join(" ");
+    })
+    .join("\n");
+}
+
+export function cleanParsedResume(p: ParsedResume): ParsedResume {
+  const cleanStr = (s?: string) => (s ? repairInterleavedText(s).trim() : undefined);
+  const cleanArr = (arr?: string[]) => (arr ?? []).map((s) => repairInterleavedText(s).trim()).filter(Boolean);
+
+  return {
+    ...p,
+    name: cleanStr(p.name),
+    email: cleanStr(p.email),
+    phone: cleanStr(p.phone),
+    location: cleanStr(p.location),
+    links: cleanArr(p.links),
+    summary: cleanStr(p.summary),
+    role_title: cleanStr(p.role_title) || "Software Engineer",
+    skills: cleanArr(p.skills),
+    experience: (p.experience ?? []).map((e) => ({
+      title: repairInterleavedText(e.title).trim(),
+      company: repairInterleavedText(e.company).trim(),
+      duration: repairInterleavedText(e.duration).trim(),
+      highlights: cleanArr(e.highlights),
+    })),
+    projects: (p.projects ?? []).map((pr) => ({
+      name: repairInterleavedText(pr.name).trim(),
+      description: repairInterleavedText(pr.description).trim(),
+      tech: cleanArr(pr.tech),
+    })),
+    education: (p.education ?? []).map((edu) => ({
+      degree: repairInterleavedText(edu.degree).trim(),
+      institution: repairInterleavedText(edu.institution).trim(),
+      year: repairInterleavedText(edu.year).trim(),
+    })),
+  };
+}
+

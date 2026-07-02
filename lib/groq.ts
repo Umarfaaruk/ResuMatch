@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 import type { ParsedResume, ExperienceLevel } from "./types";
 import { buildAtsText, buildHumanizedText } from "./resume-format";
-import { repairInterleavedText } from "./extract";
+import { repairInterleavedText } from "./resume-format";
 
 const GROQ_BASE_URL = "https://api.groq.com/openai/v1";
 const DEFAULT_MODEL = "openai/gpt-oss-20b";

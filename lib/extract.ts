@@ -89,12 +89,8 @@ export function extractContactHints(raw: string): ContactHints {
  * single characters separated by '&' back into the intended word. Legit
  * uses like "R&D" or "Q&A" have only one separator and are left alone.
  */
-export function repairInterleavedText(text: string): string {
-  return text
-    .replace(/&?(?:[^\s&]&){2,}[^\s&]?&?/g, (m) => m.replace(/&/g, ""))
-    // Single-char leftovers of the same artifact, e.g. "&-&" → "-".
-    .replace(/(^|\s)&([^\s&])&(?=\s|$)/gm, "$1$2");
-}
+import { repairInterleavedText } from "./resume-format";
+export { repairInterleavedText };
 
 /** Extract raw text from a resume file buffer based on its name/mime. */
 export async function extractResumeText(

@@ -1,6 +1,7 @@
 import "server-only";
 import { getGroqClient, getGroqModel } from "./groq";
 import type { Job, ParsedResume } from "./types";
+import { repairInterleavedText } from "./resume-format";
 
 function resumeSummaryForPrompt(p: ParsedResume): string {
   const lines: string[] = [];
@@ -161,7 +162,7 @@ export async function tailorResumeToJob(
 
   const data = parseJsonObject(completion.choices[0]?.message?.content ?? "");
   return {
-    tailoredText: String(data.tailoredText ?? "").trim(),
+    tailoredText: repairInterleavedText(String(data.tailoredText ?? "").trim()),
     addedKeywords: strArr(data.addedKeywords),
     notes: String(data.notes ?? "").trim(),
   };
