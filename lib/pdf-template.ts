@@ -11,7 +11,12 @@ export function splitDuration(d: string): [string, string] {
 }
 
 export function displayUrl(u: string): string {
-  return u.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "");
+  if (!u) return "";
+  return u
+    .replace(/^https?:\/\/(www\.)?/i, "")
+    .replace(/\/+$/, "")
+    .replace(/\s*\|\s*$/, "")
+    .trim();
 }
 
 export async function downloadTemplatePdf(
