@@ -9,6 +9,25 @@ export const maxDuration = 60;
 // matter how many browsers are polling.
 let lastSyncAt = 0;
 let inFlight: Promise<{ inserted: number; pruned: number }> | null = null;
+let warnedBadKey = false;
+
+/**
+ * Sanity-check the configured key: pasting the anon key here is a common
+ * mistake and every insert would fail RLS. Legacy keys are JWTs with a role
+ * claim; new-style secret keys start with "sb_secret_".
+ */
+function serviceKeyLooksValid(): boolean {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+  if (!key) return false;
+  const parts = key.split(".");
+  if (parts.length !== 3) return true; // sb_secret_* or other non-JWT secret
+  try {
+    const role = JSON.parse(Buffer.from(parts[1], "base64").toString()).role;
+    return role === "service_role";
+  } catch {
+    return true;
+  }
+}
 
 export async function POST(request: Request) {
   // Auth: any logged-in user may trigger a sync; external schedulers (e.g.
@@ -26,7 +45,13 @@ export async function POST(request: Request) {
     }
   }
 
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  if (!serviceKeyLooksValid()) {
+    if (!warnedBadKey) {
+      warnedBadKey = true;
+      console.warn(
+        "Jobs sync disabled: SUPABASE_SERVICE_ROLE_KEY is missing or set to the anon key. Copy the service_role secret from Supabase → Project Settings → API keys and restart."
+      );
+    }
     return NextResponse.json({ changed: false, reason: "not_configured" });
   }
 

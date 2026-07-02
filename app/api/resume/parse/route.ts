@@ -38,6 +38,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden path" }, { status: 403 });
   }
 
+  // Only resume document types are parseable.
+  if (!/\.(pdf|docx?)$/i.test(fileName)) {
+    return NextResponse.json(
+      { error: "Please upload a PDF or DOCX file." },
+      { status: 415 }
+    );
+  }
+
   // Download the uploaded file (RLS restricts this to the owner).
   const { data: fileData, error: downloadError } = await supabase.storage
     .from("resumes")
@@ -51,6 +59,14 @@ export async function POST(request: Request) {
   }
 
   const buffer = Buffer.from(await fileData.arrayBuffer());
+
+  // Match the client-side 5 MB limit server-side (small headroom).
+  if (buffer.length > 6 * 1024 * 1024) {
+    return NextResponse.json(
+      { error: "File is too large — please upload a file under 5 MB." },
+      { status: 413 }
+    );
+  }
 
   // 1) Extract raw text.
   let rawText: string;
