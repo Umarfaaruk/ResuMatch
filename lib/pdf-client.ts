@@ -1,7 +1,8 @@
 // Client-only helper to turn plain text into a downloadable PDF.
 // jsPDF is imported lazily so it stays out of the initial bundle.
 
-function isHeading(line: string): boolean {
+/** Heuristic: a line is a section heading if it's short & mostly uppercase. */
+export function isHeading(line: string): boolean {
   const t = line.trim();
   if (!t || t.length > 40) return false;
   const letters = t.replace(/[^a-zA-Z]/g, "");

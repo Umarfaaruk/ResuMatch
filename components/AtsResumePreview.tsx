@@ -6,6 +6,7 @@ import { Download, Pencil, Loader2, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { updateResumeText } from "@/app/actions/resume";
+import { isHeading } from "@/lib/pdf-client";
 import { cn } from "@/lib/utils";
 
 export interface ResumeVersion {
@@ -24,14 +25,6 @@ interface AtsResumePreviewProps {
   fileLabel?: string;
 }
 
-/** Heuristic: a line is a section heading if it's short & mostly uppercase. */
-function isHeading(line: string): boolean {
-  const trimmed = line.trim();
-  if (!trimmed || trimmed.length > 40) return false;
-  const letters = trimmed.replace(/[^a-zA-Z]/g, "");
-  if (letters.length < 3) return false;
-  return letters === letters.toUpperCase();
-}
 
 export function AtsResumePreview({
   versions,
