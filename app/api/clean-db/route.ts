@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { cleanParsedResume, repairInterleavedText } from "@/lib/resume-format";
-import type { Resume, ParsedResume } from "@/lib/types";
+import type { ParsedResume } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
