@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Search, SearchX } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, SearchX, RadioTower } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -33,12 +34,34 @@ export function JobsExplorer({
   hasResume,
   statusByJobId,
 }: JobsExplorerProps) {
+  const router = useRouter();
   const [query, setQuery] = React.useState("");
   const [location, setLocation] = React.useState("all");
   const [level, setLevel] = React.useState("all");
   const [sort, setSort] = React.useState<SortKey>(
     hasResume ? "match" : "newest"
   );
+
+  // Keep the board fresh: pull the latest listings from the live job feeds
+  // once a minute while the page is open (the server rate-limits providers).
+  React.useEffect(() => {
+    let cancelled = false;
+    async function sync() {
+      try {
+        const res = await fetch("/api/jobs/sync", { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!cancelled && data?.changed) router.refresh();
+      } catch {
+        /* offline or provider hiccup — try again next tick */
+      }
+    }
+    sync();
+    const id = setInterval(sync, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [router]);
 
   const locations = React.useMemo(
     () => Array.from(new Set(jobs.map((j) => city(j.location)))).sort(),
@@ -122,10 +145,14 @@ export function JobsExplorer({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Badge variant="muted">{filtered.length}</Badge>
         {filtered.length === 1 ? "job" : "jobs"}
         {query.trim() && <span>matching &ldquo;{query.trim()}&rdquo;</span>}
+        <span className="ml-auto inline-flex items-center gap-1.5 text-xs">
+          <RadioTower className="h-3.5 w-3.5 text-success" />
+          Live feed — refreshes every minute
+        </span>
       </div>
 
       {filtered.length === 0 ? (

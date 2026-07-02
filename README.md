@@ -18,6 +18,7 @@ skill-gap suggestions. **100% free-tier stack.**
 - AI resume parsing + ATS-safe rewrite (Groq, strict JSON output)
 - Resume builder from scratch, cover-letter generator, tailor-to-job, interview prep
 - Browse Jobs page: search by title/company/skill, filter by city & level, sort by best match
+- Live jobs feed: real listings synced every minute from Adzuna India (direct apply links) + Remotive, replacing the seed data; Apply opens the job's direct application page
 - Pure-JS job matching (60% skill Jaccard, 25% role fuzzy match, 15% experience)
 - Skill-gap suggestions mapped to free learning resources
 - Kanban application tracker (saved → applied → interview → rejected) with per-application notes
@@ -51,9 +52,22 @@ Copy `.env.example` to `.env.local` and fill in:
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → **service_role** (secret — NOT the anon key; needed for the live jobs sync) |
 | `GROQ_API_KEY` | https://console.groq.com/keys |
 | `GROQ_MODEL` | optional, defaults to `openai/gpt-oss-20b` |
+| `ADZUNA_APP_ID` / `ADZUNA_APP_KEY` | optional — free keys from https://developer.adzuna.com for real Indian listings with direct apply links (Remotive remote jobs work with no key) |
+| `CRON_SECRET` | optional — lets an external scheduler call `POST /api/jobs/sync` (header `x-cron-secret`) |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally |
+
+### Live jobs feed
+
+While anyone is on **Browse Jobs**, the app calls `POST /api/jobs/sync` once a
+minute; the server pulls new listings from the providers (rate-limited to one
+provider round-trip per minute), dedupes them by URL, and removes the sample
+seed jobs once real data exists (jobs you saved/applied to are kept). Each
+listing's **Apply** button opens the job's direct application link. For 24/7
+freshness without an open browser, point any free cron service at
+`POST /api/jobs/sync?force=1` with the `x-cron-secret` header.
 
 ## 3. Run locally
 
@@ -76,6 +90,8 @@ Open http://localhost:3000.
 
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `ADZUNA_APP_ID` / `ADZUNA_APP_KEY` (optional, for Indian listings)
    - `GROQ_API_KEY`
    - `GROQ_MODEL` → `openai/gpt-oss-20b`
    - `NEXT_PUBLIC_SITE_URL` → your Vercel URL, e.g. `https://your-app.vercel.app`

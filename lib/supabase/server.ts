@@ -30,3 +30,24 @@ export function createClient() {
     }
   );
 }
+
+/**
+ * Service-role client — SERVER ONLY, bypasses RLS. Used exclusively by the
+ * jobs sync route to write live job listings into the public jobs table.
+ */
+export function createServiceClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return [];
+        },
+        setAll() {
+          /* no-op: service client is stateless */
+        },
+      },
+    }
+  );
+}
