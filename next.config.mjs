@@ -1,9 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Keep production builds out of the dev server's .next directory, so
-  // running `npm run build` while `npm run dev` is up doesn't clobber the
-  // dev server's static assets (which breaks CSS/JS until a restart).
-  distDir: process.env.NODE_ENV === "production" ? ".next-build" : ".next",
+  // Locally, keep production builds out of the dev server's .next directory
+  // so `npm run build` doesn't clobber a running dev server's static assets.
+  // On Vercel there is no concurrent dev server and the platform expects the
+  // default ".next" output, so use it there.
+  distDir: process.env.VERCEL
+    ? ".next"
+    : process.env.NODE_ENV === "production"
+      ? ".next-build"
+      : ".next",
   experimental: {
     // These rely on Node built-ins / large assets and must not be bundled
     // by Next's server compiler — keep them external so they load at runtime.
