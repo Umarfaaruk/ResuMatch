@@ -31,11 +31,10 @@ export default async function ApplicationsPage() {
             </span>
             <p className="font-medium text-foreground">No applications yet</p>
             <p className="max-w-sm text-sm text-muted-foreground">
-              Save or apply to jobs from your dashboard and they&apos;ll show up
-              here on the board.
+              Save or apply to jobs and they&apos;ll show up here on the board.
             </p>
             <Button asChild className="mt-1">
-              <Link href="/dashboard">Browse matched jobs</Link>
+              <Link href="/jobs">Browse jobs</Link>
             </Button>
           </CardContent>
         </Card>

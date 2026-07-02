@@ -35,6 +35,59 @@ function cleanArr(a?: string[]): string[] {
   return (a ?? []).map((x) => clean(x)).filter(Boolean);
 }
 
+/**
+ * Save manual edits made to the optimized resume text on the Resume page.
+ * "ats" updates the ATS version; "humanized" updates the Professional one.
+ */
+export async function updateResumeText(
+  version: "ats" | "humanized",
+  text: string
+): Promise<{ ok: boolean; error?: string }> {
+  const trimmed = text.trim().slice(0, 30000);
+  if (trimmed.length < 40) {
+    return { ok: false, error: "The resume text is too short to save." };
+  }
+
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Please log in again." };
+
+  const { data: resume } = await supabase
+    .from("resumes")
+    .select("id, parsed_json")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!resume) return { ok: false, error: "No active resume found." };
+
+  const patch =
+    version === "ats"
+      ? { ats_text: trimmed }
+      : {
+          parsed_json: {
+            ...((resume.parsed_json as ParsedResume | null) ?? {}),
+            humanized_text: trimmed,
+          },
+        };
+
+  const { error } = await supabase
+    .from("resumes")
+    .update(patch)
+    .eq("id", resume.id)
+    .eq("user_id", user.id);
+
+  if (error) return { ok: false, error: "Failed to save your changes." };
+
+  revalidatePath("/resume");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 export async function buildResume(
   input: BuilderInput
 ): Promise<{ ok: boolean; error?: string }> {

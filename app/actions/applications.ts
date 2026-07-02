@@ -51,6 +51,56 @@ export async function upsertApplication(
   return { ok: true };
 }
 
+/**
+ * Un-save a job from a job card. Only removes the row while it is still in
+ * the "saved" state — applied/interview/rejected history is never deleted
+ * from here (use the Applications board for that).
+ */
+export async function unsaveJob(jobId: string): Promise<ActionResult> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("applications")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("job_id", jobId)
+    .eq("status", "saved");
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/applications");
+  revalidatePath("/dashboard");
+  revalidatePath("/jobs");
+  return { ok: true };
+}
+
+/** Save personal notes on an application (recruiter contact, follow-ups…). */
+export async function updateApplicationNotes(
+  applicationId: string,
+  notes: string
+): Promise<ActionResult> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("applications")
+    .update({ notes: notes.trim().slice(0, 2000) || null })
+    .eq("id", applicationId)
+    .eq("user_id", user.id);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/applications");
+  return { ok: true };
+}
+
 /** Change the status of an existing application by its id. */
 export async function updateApplicationStatus(
   applicationId: string,

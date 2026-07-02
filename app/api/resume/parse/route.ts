@@ -114,15 +114,22 @@ export async function POST(request: Request) {
   p.phone = p.phone || hints.phone;
   if (!p.links || p.links.length === 0) p.links = hints.links;
 
-  // Ensure the generated text actually contains the contact details. If the
-  // AI's version is missing them, rebuild deterministically from the now-
-  // complete structured data (which always includes a contact header).
+  // Ensure the generated text actually contains the personal details (name,
+  // email, phone). If the AI's version dropped any of them, rebuild
+  // deterministically from the now-complete structured data (which always
+  // includes a full contact header).
+  const digits = (s: string) => s.replace(/\D/g, "");
+  const hasAllDetails = (t: string) =>
+    (!p.name || t.toLowerCase().includes(p.name.trim().toLowerCase())) &&
+    (!p.email || t.includes(p.email)) &&
+    (!p.phone || digits(t).includes(digits(p.phone)));
+
   let atsText = result.ats_text;
-  if (!p.email || !atsText.includes(p.email)) {
+  if (!p.email || !hasAllDetails(atsText)) {
     atsText = buildAtsText(p);
   }
   let humanized = p.humanized_text || "";
-  if (!p.email || !humanized.includes(p.email)) {
+  if (!p.email || !hasAllDetails(humanized)) {
     humanized = buildHumanizedText(p);
   }
   p.humanized_text = humanized;

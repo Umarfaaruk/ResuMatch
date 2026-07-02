@@ -74,8 +74,14 @@ export default async function ResumePage() {
       : buildHumanizedText(parsed);
 
   const versions: ResumeVersion[] = [
-    { key: "ATS", label: "ATS-friendly", text: atsText, serif: true },
-    { key: "Professional", label: "Professional", text: humanizedText, serif: false },
+    { id: "ats", key: "ATS", label: "ATS-friendly", text: atsText, serif: true },
+    {
+      id: "humanized",
+      key: "Professional",
+      label: "Professional",
+      text: humanizedText,
+      serif: false,
+    },
   ];
 
   // A short-lived signed URL to view the originally uploaded file.
@@ -226,8 +232,8 @@ export default async function ResumePage() {
               Optimized resume
             </CardTitle>
             <CardDescription>
-              Switch between the ATS-friendly and humanized versions. Download
-              either as a PDF.
+              Switch between the ATS-friendly and Professional versions, edit
+              any detail in place, then download as a PDF.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col">

@@ -5,6 +5,7 @@ import { getSkillGaps } from "@/lib/resources";
 import type {
   Application,
   ApplicationStatus,
+  BrowsableJob,
   Job,
   MatchedJob,
   ParsedResume,
@@ -54,6 +55,33 @@ export async function getUserApplications(): Promise<Application[]> {
     .order("created_at", { ascending: false });
 
   return (data as Application[]) ?? [];
+}
+
+export interface BrowseJobsData {
+  /** Every job, scored against the active resume when one exists. */
+  jobs: BrowsableJob[];
+  hasResume: boolean;
+  statusByJobId: Record<string, ApplicationStatus>;
+}
+
+export async function getBrowseJobsData(): Promise<BrowseJobsData> {
+  const [resume, jobs, applications] = await Promise.all([
+    getActiveResume(),
+    getAllJobs(),
+    getUserApplications(),
+  ]);
+
+  const statusByJobId: Record<string, ApplicationStatus> = {};
+  for (const app of applications) {
+    statusByJobId[app.job_id] = app.status;
+  }
+
+  const hasResume = Boolean(resume?.parsed_json);
+  const browsable: BrowsableJob[] = hasResume
+    ? getMatchedJobs(resume!.parsed_json as ParsedResume, jobs, jobs.length)
+    : jobs.map((job) => ({ ...job, missingSkills: job.required_skills }));
+
+  return { jobs: browsable, hasResume, statusByJobId };
 }
 
 export interface DashboardData {

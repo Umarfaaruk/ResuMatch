@@ -91,6 +91,16 @@ export interface MatchedJob extends Job {
   missingSkills: string[];
 }
 
+/**
+ * A job that may or may not carry match data — used on the Browse Jobs page,
+ * which works even before the user has uploaded a resume.
+ */
+export type BrowsableJob = Job & {
+  matchScore?: number | null;
+  matchedSkills?: string[];
+  missingSkills?: string[];
+};
+
 export interface SkillGap {
   skill: string;
   resourceName: string;

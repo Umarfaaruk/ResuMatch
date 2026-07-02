@@ -177,6 +177,13 @@ export default async function DashboardPage() {
           {matches.length > 0 && (
             <Badge variant="muted">{matches.length}</Badge>
           )}
+          <Link
+            href="/jobs"
+            className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          >
+            Browse all jobs
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
 
         {!resume ? (
@@ -190,6 +197,9 @@ export default async function DashboardPage() {
                 We score every job by skill overlap, role fit, and experience
                 level — no guesswork.
               </p>
+              <Button asChild variant="outline" size="sm" className="mt-1">
+                <Link href="/jobs">Browse all jobs anyway</Link>
+              </Button>
             </CardContent>
           </Card>
         ) : (

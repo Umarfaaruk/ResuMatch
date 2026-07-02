@@ -2,24 +2,6 @@
 // and mammoth for DOCX. Keep this out of client bundles.
 import "server-only";
 
-export type SupportedMime =
-  | "application/pdf"
-  | "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-  | "application/msword";
-
-export function isSupportedType(mime: string, filename: string): boolean {
-  const lower = filename.toLowerCase();
-  return (
-    mime === "application/pdf" ||
-    lower.endsWith(".pdf") ||
-    mime ===
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-    lower.endsWith(".docx") ||
-    mime === "application/msword" ||
-    lower.endsWith(".doc")
-  );
-}
-
 async function extractPdf(buffer: Buffer): Promise<string> {
   const { PDFParse } = await import("pdf-parse");
   // Preload the pdf.js worker. Harmless when not required, but helps in some

@@ -30,24 +30,3 @@ export function createClient() {
     }
   );
 }
-
-/**
- * Service-role client — SERVER ONLY. Bypasses RLS. Use sparingly
- * (e.g. reading the private resumes bucket inside a trusted route).
- */
-export function createServiceClient() {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return [];
-        },
-        setAll() {
-          /* no-op: service client is stateless */
-        },
-      },
-    }
-  );
-}

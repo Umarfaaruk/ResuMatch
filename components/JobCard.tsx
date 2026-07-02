@@ -9,6 +9,7 @@ import {
   BookmarkCheck,
   Check,
   Loader2,
+  CalendarDays,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,13 +17,27 @@ import { Badge } from "@/components/ui/badge";
 import { MatchRing } from "@/components/MatchRing";
 import { JobAiActions } from "@/components/JobAiActions";
 import { useToast } from "@/components/ui/toast";
-import { upsertApplication } from "@/app/actions/applications";
-import type { MatchedJob, ApplicationStatus } from "@/lib/types";
+import { upsertApplication, unsaveJob } from "@/app/actions/applications";
+import type { BrowsableJob, ApplicationStatus } from "@/lib/types";
 
 interface JobCardProps {
-  job: MatchedJob;
+  job: BrowsableJob;
   /** Current tracked status for this job, if any. */
   status?: ApplicationStatus | null;
+}
+
+/** Human-friendly "Posted N days ago" from a YYYY-MM-DD date. */
+function postedAgo(dateStr: string): string {
+  const posted = new Date(dateStr);
+  if (isNaN(posted.getTime())) return "";
+  const days = Math.max(
+    0,
+    Math.floor((Date.now() - posted.getTime()) / 86_400_000)
+  );
+  if (days === 0) return "Posted today";
+  if (days === 1) return "Posted yesterday";
+  if (days < 30) return `Posted ${days} days ago`;
+  return `Posted ${Math.floor(days / 30)}+ months ago`;
 }
 
 export function JobCard({ job, status: initialStatus }: JobCardProps) {
@@ -33,11 +48,13 @@ export function JobCard({ job, status: initialStatus }: JobCardProps) {
   const [pending, startTransition] = React.useTransition();
 
   const saved = status !== null;
+  const matchedSkills = job.matchedSkills ?? [];
+  const missingSkills = job.missingSkills ?? [];
+  const posted = postedAgo(job.posted_date);
 
   function handleSave() {
-    const nextSaved = !saved;
     startTransition(async () => {
-      if (nextSaved) {
+      if (!saved) {
         const res = await upsertApplication(job.id, "saved");
         if (res.ok) {
           setStatus("saved");
@@ -45,11 +62,19 @@ export function JobCard({ job, status: initialStatus }: JobCardProps) {
         } else {
           toast({ title: "Couldn't save", description: res.error, variant: "error" });
         }
+      } else if (status === "saved") {
+        const res = await unsaveJob(job.id);
+        if (res.ok) {
+          setStatus(null);
+          toast({ title: "Removed from saved jobs" });
+        } else {
+          toast({ title: "Couldn't remove", description: res.error, variant: "error" });
+        }
       } else {
-        // We don't hard-delete from the card; just inform.
+        // Applied/interview/rejected history is managed on the board.
         toast({
           title: "Manage in Applications",
-          description: "Remove it from the Applications board.",
+          description: "This job is already in your pipeline — update it on the board.",
         });
       }
     });
@@ -64,6 +89,12 @@ export function JobCard({ job, status: initialStatus }: JobCardProps) {
       if (res.ok) {
         setStatus("applied");
         toast({ title: "Marked as applied", variant: "success" });
+      } else {
+        toast({
+          title: "Couldn't mark as applied",
+          description: res.error,
+          variant: "error",
+        });
       }
     });
   }
@@ -85,17 +116,25 @@ export function JobCard({ job, status: initialStatus }: JobCardProps) {
               {job.location}
             </span>
           </div>
+          {posted && (
+            <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <CalendarDays className="h-3 w-3" />
+              {posted}
+            </p>
+          )}
         </div>
-        <MatchRing score={job.matchScore} />
+        {typeof job.matchScore === "number" && (
+          <MatchRing score={job.matchScore} />
+        )}
       </div>
 
-      {job.matchedSkills.length > 0 && (
+      {matchedSkills.length > 0 && (
         <div className="mt-4">
           <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Matched skills
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {job.matchedSkills.slice(0, 6).map((s) => (
+            {matchedSkills.slice(0, 6).map((s) => (
               <Badge key={s} variant="success">
                 {s}
               </Badge>
@@ -104,13 +143,13 @@ export function JobCard({ job, status: initialStatus }: JobCardProps) {
         </div>
       )}
 
-      {job.missingSkills.length > 0 && (
+      {missingSkills.length > 0 && (
         <div className="mt-3">
           <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Skills to add
+            {matchedSkills.length > 0 ? "Skills to add" : "Required skills"}
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {job.missingSkills.slice(0, 5).map((s) => (
+            {missingSkills.slice(0, 5).map((s) => (
               <Badge key={s} variant="outline">
                 {s}
               </Badge>

@@ -16,9 +16,11 @@ skill-gap suggestions. **100% free-tier stack.**
 
 - Email/password + Google OAuth (via Supabase Auth)
 - AI resume parsing + ATS-safe rewrite (Groq, strict JSON output)
+- Resume builder from scratch, cover-letter generator, tailor-to-job, interview prep
+- Browse Jobs page: search by title/company/skill, filter by city & level, sort by best match
 - Pure-JS job matching (60% skill Jaccard, 25% role fuzzy match, 15% experience)
 - Skill-gap suggestions mapped to free learning resources
-- Kanban application tracker (saved → applied → interview → rejected)
+- Kanban application tracker (saved → applied → interview → rejected) with per-application notes
 - Fully responsive, navy × amber "Notion meets LinkedIn" design
 
 ---
@@ -49,7 +51,6 @@ Copy `.env.example` to `.env.local` and fill in:
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API (keep secret) |
 | `GROQ_API_KEY` | https://console.groq.com/keys |
 | `GROQ_MODEL` | optional, defaults to `openai/gpt-oss-20b` |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` locally |
@@ -75,7 +76,6 @@ Open http://localhost:3000.
 
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
    - `GROQ_API_KEY`
    - `GROQ_MODEL` → `openai/gpt-oss-20b`
    - `NEXT_PUBLIC_SITE_URL` → your Vercel URL, e.g. `https://your-app.vercel.app`
@@ -95,13 +95,15 @@ That's it — the app runs entirely on free tiers.
 app/
   (app)/                # authenticated routes (shared AppShell layout)
     dashboard/          # resume status, matches feed, skill gaps, mini tracker
-    resume/             # original vs ATS-optimized + PDF download
-    applications/       # kanban board
+    jobs/               # browse/search all jobs with filters
+    resume/             # original vs ATS-optimized + PDF download (+ /build)
+    applications/       # kanban board with notes
+    interview/          # AI interview prep
   api/resume/parse/     # Node route: download → extract → Groq → save
   auth/callback/        # OAuth / email confirmation handler
-  actions/              # server actions (applications CRUD)
+  actions/              # server actions (applications CRUD, AI, resume builder)
   login/                # email/password + Google
-components/             # AppShell, JobCard, ResumeUploader, kanban, ui/*
+components/             # AppShell, JobCard, JobsExplorer, ResumeUploader, kanban, ui/*
 lib/                    # supabase clients, matching, groq, resources, queries
 supabase/migrations/    # 0001_init.sql
 ```
