@@ -1,5 +1,6 @@
 // Client-only helper to turn plain text into a downloadable PDF.
 // jsPDF is imported lazily so it stays out of the initial bundle.
+import { repairInterleavedText } from "@/lib/resume-format";
 
 /** Heuristic: a line is a section heading if it's short & mostly uppercase. */
 export function isHeading(line: string): boolean {
@@ -10,10 +11,12 @@ export function isHeading(line: string): boolean {
 }
 
 export async function downloadTextAsPdf(
-  text: string,
+  rawText: string,
   filename: string,
   opts: { serif?: boolean; headingRules?: boolean } = {}
 ) {
+  // Final gate: repair glyph-interleaving artifacts before rendering.
+  const text = repairInterleavedText(rawText);
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const font = opts.serif ? "times" : "helvetica";

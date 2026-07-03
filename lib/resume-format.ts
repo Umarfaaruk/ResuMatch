@@ -253,24 +253,36 @@ export function buildHumanizedText(p: ParsedResume): string {
  */
 export function repairInterleavedText(text: string): string {
   if (!text) return "";
-  return text
-    .split("\n")
-    .map((line) => {
-      return line
-        .split(" ")
-        .map((word) => {
-          const ampersandCount = (word.match(/&/g) || []).length;
-          if (ampersandCount >= 2) {
-            return word.replace(/&/g, "");
-          }
-          if (word.startsWith("&") && word.endsWith("&") && word.length > 2) {
-            return word.replace(/&/g, "");
-          }
-          return word;
-        })
-        .join(" ");
-    })
-    .join("\n");
+  return (
+    text
+      // Normalize exotic whitespace so the passes below see real spaces.
+      .replace(/[   ]/g, " ")
+      // Pass 1: runs of single characters joined by '&' anywhere in a line,
+      // e.g. "&D&e&s&i&g&n&e&d&" → "Designed".
+      .replace(/&?(?:[^\s&]&){2,}[^\s&]?&?/g, (m) => m.replace(/&/g, ""))
+      // Pass 2: single-char leftovers of the same artifact, e.g. "&-&" → "-".
+      .replace(/(^|\s)&([^\s&])&(?=\s|$)/gm, "$1$2")
+      // Pass 2b: stray '&' glued to the front of a word ("&SIEM" → "SIEM"),
+      // left behind when the artifact contained doubled separators.
+      .replace(/(^|\s)&(?=[A-Za-z]{2,})/gm, "$1")
+      // Pass 3: any remaining word still carrying 2+ ampersands is artifact
+      // debris — legit uses (R&D, Q&A, AT&T) have exactly one and survive.
+      .split("\n")
+      .map((line) =>
+        line
+          .split(" ")
+          .map((word) => {
+            const count = (word.match(/&/g) || []).length;
+            if (count >= 2) return word.replace(/&/g, "");
+            if (word.startsWith("&") && word.endsWith("&") && word.length > 2) {
+              return word.replace(/&/g, "");
+            }
+            return word;
+          })
+          .join(" ")
+      )
+      .join("\n")
+  );
 }
 
 export function cleanParsedResume(p: ParsedResume): ParsedResume {

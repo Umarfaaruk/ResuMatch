@@ -2,7 +2,11 @@
 // matching the on-screen resume template — centered serif header, ruled
 // UPPERCASE section headings, right-aligned dates, two-column skills.
 import type { ParsedResume } from "@/lib/types";
-import { formatSkill, groupSkills } from "@/lib/resume-format";
+import {
+  cleanParsedResume,
+  formatSkill,
+  groupSkills,
+} from "@/lib/resume-format";
 
 /** "05/2025 – 07/2025 | Hyderabad, India" → ["05/2025 – 07/2025", "Hyderabad, India"] */
 export function splitDuration(d: string): [string, string] {
@@ -20,9 +24,12 @@ export function displayUrl(u: string): string {
 }
 
 export async function downloadTemplatePdf(
-  parsed: ParsedResume,
+  rawParsed: ParsedResume,
   filename: string
 ) {
+  // Final gate: no matter which data path produced this object, repair any
+  // glyph-interleaving artifacts so they can never reach a downloaded PDF.
+  const parsed = cleanParsedResume(rawParsed);
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();

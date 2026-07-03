@@ -1,7 +1,11 @@
 "use client";
 
 import { MapPin, Mail, Phone, Link2 } from "lucide-react";
-import { formatSkill, groupSkills } from "@/lib/resume-format";
+import {
+  cleanParsedResume,
+  formatSkill,
+  groupSkills,
+} from "@/lib/resume-format";
 import { splitDuration, displayUrl } from "@/lib/pdf-template";
 import type { ParsedResume } from "@/lib/types";
 
@@ -10,7 +14,10 @@ import type { ParsedResume } from "@/lib/types";
  * header, ruled UPPERCASE section headings, right-aligned dates, and
  * two-column skills. Mirrors the layout produced by downloadTemplatePdf.
  */
-export function ResumeTemplate({ parsed }: { parsed: ParsedResume }) {
+export function ResumeTemplate({ parsed: rawParsed }: { parsed: ParsedResume }) {
+  // Final gate: repair any legacy artifacts before rendering, so the
+  // on-screen resume always matches the (also-cleaned) PDF download.
+  const parsed = cleanParsedResume(rawParsed);
   const contact = [
     parsed.location && { icon: MapPin, text: parsed.location },
     parsed.email && { icon: Mail, text: parsed.email },
