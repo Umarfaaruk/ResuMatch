@@ -17,7 +17,7 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "ResuMatch — ATS-ready resumes & smart job matches",
+  title: "Jobly — ATS-ready resumes & smart job matches",
   description:
     "Upload your resume, get an ATS-safe rewrite, ranked job matches, an application tracker, and skill-gap suggestions. Built for Indian freshers.",
 };

@@ -1,5 +1,5 @@
 -- ============================================================================
--- ResuMatch — initial schema
+-- Jobly — initial schema
 -- Run this in the Supabase SQL Editor (Dashboard → SQL → New query),
 -- or via the Supabase CLI: `supabase db push`.
 --

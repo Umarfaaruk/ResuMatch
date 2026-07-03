@@ -1,4 +1,4 @@
-// Shared domain types for ResuMatch.
+// Shared domain types for Jobly.
 // These mirror the Supabase schema in supabase/migrations.
 
 export type ExperienceLevel = "fresher" | "junior" | "mid";

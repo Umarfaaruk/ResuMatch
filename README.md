@@ -1,4 +1,4 @@
-# ResuMatch
+# Jobly
 
 ATS-ready resumes & smart job matches for Indian freshers. Upload a resume →
 AI parses + rewrites it ATS-safe → ranked job matches → application tracker →

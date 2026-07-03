@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FileText, Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -119,15 +120,15 @@ export function LoginForm() {
   return (
     <div className="w-full max-w-md">
       <div className="mb-8 text-center">
-        <span className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-          <FileText className="h-6 w-6" />
-        </span>
+        <div className="mb-4 pt-2">
+          <Logo className="text-3xl" />
+        </div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           {mode === "signin" ? "Welcome back" : "Create your account"}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {mode === "signin"
-            ? "Log in to your ResuMatch dashboard."
+            ? "Log in to your Jobly dashboard."
             : "Start matching with the right jobs in minutes."}
         </p>
       </div>
@@ -220,7 +221,7 @@ export function LoginForm() {
       </div>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
-        {mode === "signin" ? "New to ResuMatch?" : "Already have an account?"}{" "}
+        {mode === "signin" ? "New to Jobly?" : "Already have an account?"}{" "}
         <button
           type="button"
           className="font-semibold text-primary hover:underline"

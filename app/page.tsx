@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  FileText,
   Sparkles,
   Target,
   KanbanSquare,
@@ -10,6 +9,7 @@ import {
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/Logo";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -70,13 +70,8 @@ export default async function LandingPage({
       {/* Nav */}
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <FileText className="h-5 w-5" />
-            </span>
-            <span className="text-lg font-bold tracking-tight text-primary">
-              ResuMatch
-            </span>
+          <Link href="/" className="flex items-center pt-1">
+            <Logo className="ml-2 text-xl" />
           </Link>
           <nav className="flex items-center gap-2">
             {user ? (
@@ -114,7 +109,7 @@ export default async function LandingPage({
               <span className="text-warm">interview calls</span>.
             </h1>
             <p className="mt-5 max-w-md text-lg text-primary-foreground/80">
-              Upload once. ResuMatch makes your resume ATS-safe, ranks the jobs
+              Upload once. Jobly makes your resume ATS-safe, ranks the jobs
               you fit best, tracks your applications, and shows the exact skills
               to learn next — all on a free plan.
             </p>
@@ -253,7 +248,7 @@ export default async function LandingPage({
 
       <footer className="border-t py-8">
         <div className="container flex flex-col items-center justify-between gap-3 text-sm text-muted-foreground sm:flex-row">
-          <p>© {new Date().getFullYear()} ResuMatch. Free for everyone.</p>
+          <p>© {new Date().getFullYear()} Jobly. Free for everyone.</p>
           <p>Built with Next.js, Supabase &amp; Groq.</p>
         </div>
       </footer>

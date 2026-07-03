@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  FileText,
   LayoutDashboard,
   FileEdit,
   KanbanSquare,
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
 
 const NAV = [
@@ -68,13 +68,8 @@ export function AppShell({ email, fullName, children }: AppShellProps) {
     <div className="min-h-screen bg-background">
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r bg-card lg:flex">
-        <div className="flex h-16 items-center gap-2 border-b px-6">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <FileText className="h-5 w-5" />
-          </span>
-          <span className="text-lg font-bold tracking-tight text-primary">
-            ResuMatch
-          </span>
+        <div className="flex h-16 items-center border-b px-6 pt-1">
+          <Logo className="ml-2 text-xl" />
         </div>
         <div className="flex-1 overflow-y-auto p-4">
           <NavLinks />
@@ -86,13 +81,8 @@ export function AppShell({ email, fullName, children }: AppShellProps) {
 
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-card px-4 lg:hidden">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <FileText className="h-5 w-5" />
-          </span>
-          <span className="text-lg font-bold tracking-tight text-primary">
-            ResuMatch
-          </span>
+        <Link href="/dashboard" className="flex items-center pt-1">
+          <Logo className="ml-2 text-xl" />
         </Link>
         <Button
           variant="ghost"
@@ -112,10 +102,8 @@ export function AppShell({ email, fullName, children }: AppShellProps) {
             onClick={() => setMobileOpen(false)}
           />
           <div className="absolute inset-y-0 left-0 flex w-72 flex-col bg-card shadow-xl">
-            <div className="flex h-16 items-center justify-between border-b px-6">
-              <span className="text-lg font-bold tracking-tight text-primary">
-                ResuMatch
-              </span>
+            <div className="flex h-16 items-center justify-between border-b px-6 pt-1">
+              <Logo className="ml-2 text-xl" />
               <Button
                 variant="ghost"
                 size="icon"
