@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ResumeUploader } from "@/components/ResumeUploader";
 import { ResumeViews } from "@/components/ResumeViews";
+import { AtsScoreCard } from "@/components/AtsScoreCard";
 import { getActiveResume } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { buildAtsText } from "@/lib/resume-format";
@@ -27,10 +28,6 @@ export const dynamic = "force-dynamic";
 
 export default async function ResumePage() {
   const resume = await getActiveResume();
-
-  console.log("=== SERVER SIDE RESUME DATA ===");
-  console.log(resume ? JSON.stringify(resume.parsed_json, null, 2) : "NO RESUME FOUND");
-  console.log("===============================");
 
   if (!resume || !resume.parsed_json) {
     return (
@@ -109,6 +106,8 @@ export default async function ResumePage() {
           </div>
         </div>
       </div>
+
+      <AtsScoreCard parsed={parsed} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* LEFT — extracted from original */}

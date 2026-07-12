@@ -9,6 +9,8 @@ import {
   KanbanSquare,
   MessageSquareText,
   Briefcase,
+  GraduationCap,
+  Library,
   Menu,
   X,
 } from "lucide-react";
@@ -20,9 +22,11 @@ import { UserMenu } from "@/components/UserMenu";
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/jobs", label: "Browse Jobs", icon: Briefcase },
+  { href: "/internships", label: "Internships", icon: GraduationCap },
   { href: "/resume", label: "My Resume", icon: FileEdit },
   { href: "/applications", label: "Applications", icon: KanbanSquare },
   { href: "/interview", label: "Interview Prep", icon: MessageSquareText },
+  { href: "/resources", label: "Resources", icon: Library },
 ];
 
 interface AppShellProps {

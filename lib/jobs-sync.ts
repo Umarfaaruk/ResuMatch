@@ -90,16 +90,27 @@ function toDate(v: string | undefined): string {
 }
 
 // ── Providers ────────────────────────────────────────────────────────────────
+// Per-provider cooldowns keep the feed fresh while staying far inside free
+// quotas: Adzuna free tier is ~250 calls/day (call at most every 30 min);
+// Remotive is keyless but caches server-side for ~10+ minutes anyway.
+const ADZUNA_COOLDOWN_MS = 30 * 60 * 1000;
+const REMOTIVE_COOLDOWN_MS = 10 * 60 * 1000;
+let lastAdzunaAt = 0;
+let lastRemotiveAt = 0;
 
 async function fetchAdzuna(): Promise<LiveJob[]> {
   const id = process.env.ADZUNA_APP_ID;
   const key = process.env.ADZUNA_APP_KEY;
   if (!id || !key) return [];
+  if (Date.now() - lastAdzunaAt < ADZUNA_COOLDOWN_MS) return [];
+  lastAdzunaAt = Date.now();
 
   const url =
     `https://api.adzuna.com/v1/api/jobs/in/search/1?app_id=${id}&app_key=${key}` +
-    `&results_per_page=40&max_days_old=30&sort_by=date` +
-    `&what_or=${encodeURIComponent("developer engineer analyst data intern software")}`;
+    `&results_per_page=50&max_days_old=7&sort_by=date` +
+    `&what_or=${encodeURIComponent(
+      "developer engineer analyst data software intern internship trainee fresher graduate"
+    )}`;
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Adzuna ${res.status}`);
   const data = (await res.json()) as {
@@ -134,6 +145,8 @@ async function fetchAdzuna(): Promise<LiveJob[]> {
 }
 
 async function fetchRemotive(): Promise<LiveJob[]> {
+  if (Date.now() - lastRemotiveAt < REMOTIVE_COOLDOWN_MS) return [];
+  lastRemotiveAt = Date.now();
   const res = await fetch(
     "https://remotive.com/api/remote-jobs?category=software-dev&limit=40",
     { cache: "no-store" }
@@ -209,9 +222,9 @@ export interface SyncResult {
 
 /**
  * Fetch live jobs from all configured providers and insert any listings we
- * don't already have (deduped by source_url). Once live data exists, the
- * fabricated seed jobs are removed — except ones a user has already saved or
- * applied to, which must survive for their tracker history.
+ * don't already have (deduped by source_url). Keeps the feed CURRENT:
+ * fabricated seed jobs and listings older than 30 days are removed — except
+ * ones a user has saved or applied to, which must survive for their tracker.
  */
 export async function syncJobs(
   svc: SupabaseClient
@@ -273,6 +286,29 @@ export async function syncJobs(
         const { error } = await svc.from("jobs").delete().in("id", deletable);
         if (!error) pruned = deletable.length;
       }
+    }
+  }
+
+  // Purge stale listings (30+ days old) that nobody is tracking, so the
+  // board only ever shows openings that are still worth applying to.
+  const cutoff = new Date(Date.now() - 30 * 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+  const { data: staleRows } = await svc
+    .from("jobs")
+    .select("id")
+    .lt("posted_date", cutoff);
+  if (staleRows?.length) {
+    const { data: apps } = await svc.from("applications").select("job_id");
+    const usedIds = new Set(
+      (apps ?? []).map((a: { job_id: string }) => a.job_id)
+    );
+    const stale = staleRows
+      .filter((r: { id: string }) => !usedIds.has(r.id))
+      .map((r: { id: string }) => r.id);
+    if (stale.length > 0) {
+      const { error } = await svc.from("jobs").delete().in("id", stale);
+      if (!error) pruned += stale.length;
     }
   }
 

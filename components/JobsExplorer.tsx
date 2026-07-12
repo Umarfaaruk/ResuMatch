@@ -14,12 +14,16 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { JobCard } from "@/components/JobCard";
+import { useToast } from "@/components/ui/toast";
+import { isInternship } from "@/lib/matching";
 import type { ApplicationStatus, BrowsableJob } from "@/lib/types";
 
 interface JobsExplorerProps {
   jobs: BrowsableJob[];
   hasResume: boolean;
   statusByJobId: Record<string, ApplicationStatus>;
+  /** "internships" narrows to intern/trainee listings; default shows the rest. */
+  mode?: "jobs" | "internships";
 }
 
 type SortKey = "match" | "newest";
@@ -30,17 +34,51 @@ function city(location: string): string {
 }
 
 export function JobsExplorer({
-  jobs,
+  jobs: allJobs,
   hasResume,
   statusByJobId,
+  mode = "jobs",
 }: JobsExplorerProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [query, setQuery] = React.useState("");
   const [location, setLocation] = React.useState("all");
   const [level, setLevel] = React.useState("all");
   const [sort, setSort] = React.useState<SortKey>(
     hasResume ? "match" : "newest"
   );
+
+  const jobs = React.useMemo(
+    () =>
+      allJobs.filter((j) =>
+        mode === "internships" ? isInternship(j) : !isInternship(j)
+      ),
+    [allJobs, mode]
+  );
+  const noun = mode === "internships" ? "internship" : "job";
+
+  // "What's new since I last looked?" — compare against the newest
+  // posted_date the user saw on their previous visit (per mode).
+  React.useEffect(() => {
+    if (jobs.length === 0) return;
+    const key = `jobly-last-seen-${mode}`;
+    const lastSeen = localStorage.getItem(key);
+    const newest = jobs
+      .map((j) => j.posted_date)
+      .sort()
+      .at(-1)!;
+    if (lastSeen) {
+      const fresh = jobs.filter((j) => j.posted_date > lastSeen).length;
+      if (fresh > 0) {
+        toast({
+          title: `${fresh} new ${noun}${fresh === 1 ? "" : "s"} since your last visit`,
+          variant: "success",
+        });
+      }
+    }
+    localStorage.setItem(key, newest);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Keep the board fresh: pull the latest listings from the live job feeds
   // once a minute while the page is open (the server rate-limits providers).
@@ -147,7 +185,7 @@ export function JobsExplorer({
 
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         <Badge variant="muted">{filtered.length}</Badge>
-        {filtered.length === 1 ? "job" : "jobs"}
+        {filtered.length === 1 ? noun : `${noun}s`}
         {query.trim() && <span>matching &ldquo;{query.trim()}&rdquo;</span>}
         <span className="ml-auto inline-flex items-center gap-1.5 text-xs">
           <RadioTower className="h-3.5 w-3.5 text-success" />
@@ -159,7 +197,7 @@ export function JobsExplorer({
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-12 text-center">
             <SearchX className="h-8 w-8 text-muted-foreground" />
-            <p className="font-medium text-foreground">No jobs found</p>
+            <p className="font-medium text-foreground">No {noun}s found</p>
             <p className="max-w-sm text-sm text-muted-foreground">
               Try a broader search term or clear the location and level filters.
             </p>

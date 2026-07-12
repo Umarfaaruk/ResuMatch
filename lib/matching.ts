@@ -58,6 +58,13 @@ function experienceSimilarity(a: ExperienceLevel, b: ExperienceLevel): number {
   return 0;
 }
 
+/** Heuristic: is this listing an internship/trainee opportunity? */
+export function isInternship(job: Pick<Job, "title" | "role_title">): boolean {
+  return /\bintern(ship)?\b|\btrainee\b/i.test(
+    `${job.title} ${job.role_title ?? ""}`
+  );
+}
+
 /**
  * Score and rank jobs against a parsed resume. Pure JS — no AI cost.
  * Returns the top `limit` jobs with matchScore (0–100) and skill diffs.

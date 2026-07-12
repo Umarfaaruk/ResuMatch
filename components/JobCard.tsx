@@ -26,14 +26,17 @@ interface JobCardProps {
   status?: ApplicationStatus | null;
 }
 
+/** Days since posting; Infinity when unparseable. */
+export function daysSince(dateStr: string): number {
+  const posted = new Date(dateStr);
+  if (isNaN(posted.getTime())) return Infinity;
+  return Math.max(0, Math.floor((Date.now() - posted.getTime()) / 86_400_000));
+}
+
 /** Human-friendly "Posted N days ago" from a YYYY-MM-DD date. */
 function postedAgo(dateStr: string): string {
-  const posted = new Date(dateStr);
-  if (isNaN(posted.getTime())) return "";
-  const days = Math.max(
-    0,
-    Math.floor((Date.now() - posted.getTime()) / 86_400_000)
-  );
+  const days = daysSince(dateStr);
+  if (!isFinite(days)) return "";
   if (days === 0) return "Posted today";
   if (days === 1) return "Posted yesterday";
   if (days < 30) return `Posted ${days} days ago`;
@@ -51,6 +54,7 @@ export function JobCard({ job, status: initialStatus }: JobCardProps) {
   const matchedSkills = job.matchedSkills ?? [];
   const missingSkills = job.missingSkills ?? [];
   const posted = postedAgo(job.posted_date);
+  const isNew = daysSince(job.posted_date) <= 2;
 
   function handleSave() {
     startTransition(async () => {
@@ -103,9 +107,16 @@ export function JobCard({ job, status: initialStatus }: JobCardProps) {
     <Card className="flex flex-col p-5 transition-shadow hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="truncate font-semibold text-foreground">
-            {job.title}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="truncate font-semibold text-foreground">
+              {job.title}
+            </h3>
+            {isNew && (
+              <Badge variant="warm" className="shrink-0 px-1.5 py-0 text-[10px]">
+                NEW
+              </Badge>
+            )}
+          </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <Building2 className="h-3.5 w-3.5" />

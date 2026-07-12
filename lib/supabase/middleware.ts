@@ -4,9 +4,11 @@ import { NextResponse, type NextRequest } from "next/server";
 const PROTECTED_PREFIXES = [
   "/dashboard",
   "/jobs",
+  "/internships",
   "/resume",
   "/applications",
   "/interview",
+  "/resources",
 ];
 
 /**
