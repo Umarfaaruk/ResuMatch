@@ -20,6 +20,7 @@ export const config = {
     "/applications/:path*",
     "/interview/:path*",
     "/resources/:path*",
+    "/admin/:path*",
     "/login",
   ],
 };

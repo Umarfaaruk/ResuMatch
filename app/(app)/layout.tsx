@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient, getUser } from "@/lib/supabase/server";
+import { adminEmails } from "@/lib/admin";
 import { AppShell } from "@/components/AppShell";
 
 export const dynamic = "force-dynamic";
@@ -22,8 +23,14 @@ export default async function AppLayout({
     .eq("id", user.id)
     .maybeSingle();
 
+  const isAdmin = adminEmails().includes((user.email ?? "").toLowerCase());
+
   return (
-    <AppShell email={user.email ?? ""} fullName={profile?.full_name ?? null}>
+    <AppShell
+      email={user.email ?? ""}
+      fullName={profile?.full_name ?? null}
+      isAdmin={isAdmin}
+    >
       {children}
     </AppShell>
   );

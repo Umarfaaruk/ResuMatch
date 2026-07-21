@@ -11,6 +11,7 @@ import {
   Briefcase,
   GraduationCap,
   Library,
+  ShieldCheck,
   Menu,
   X,
 } from "lucide-react";
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
 import { UserMenu } from "@/components/UserMenu";
+import { ReportIssueDialog } from "@/components/ReportIssueDialog";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -32,10 +34,16 @@ const NAV = [
 interface AppShellProps {
   email: string;
   fullName: string | null;
+  isAdmin?: boolean;
   children: React.ReactNode;
 }
 
-export function AppShell({ email, fullName, children }: AppShellProps) {
+export function AppShell({
+  email,
+  fullName,
+  isAdmin = false,
+  children,
+}: AppShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = React.useState(false);
 
@@ -44,9 +52,17 @@ export function AppShell({ email, fullName, children }: AppShellProps) {
     setMobileOpen(false);
   }, [pathname]);
 
+  const items = React.useMemo(
+    () =>
+      isAdmin
+        ? [...NAV, { href: "/admin", label: "Admin", icon: ShieldCheck }]
+        : NAV,
+    [isAdmin]
+  );
+
   const NavLinks = () => (
     <nav className="flex flex-col gap-1">
-      {NAV.map((item) => {
+      {items.map((item) => {
         const active =
           pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
@@ -78,7 +94,8 @@ export function AppShell({ email, fullName, children }: AppShellProps) {
         <div className="flex-1 overflow-y-auto p-4">
           <NavLinks />
         </div>
-        <div className="border-t p-4">
+        <div className="space-y-2 border-t p-4">
+          <ReportIssueDialog />
           <UserMenu email={email} fullName={fullName} />
         </div>
       </aside>
@@ -120,7 +137,8 @@ export function AppShell({ email, fullName, children }: AppShellProps) {
             <div className="flex-1 overflow-y-auto p-4">
               <NavLinks />
             </div>
-            <div className="border-t p-4">
+            <div className="space-y-2 border-t p-4">
+              <ReportIssueDialog />
               <UserMenu email={email} fullName={fullName} />
             </div>
           </div>

@@ -9,6 +9,7 @@ const PROTECTED_PREFIXES = [
   "/applications",
   "/interview",
   "/resources",
+  "/admin",
 ];
 
 /**

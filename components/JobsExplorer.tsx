@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { JobCard } from "@/components/JobCard";
 import { useToast } from "@/components/ui/toast";
 import { isInternship } from "@/lib/matching";
+import { cn } from "@/lib/utils";
 import type { ApplicationStatus, BrowsableJob } from "@/lib/types";
 
 interface JobsExplorerProps {
@@ -47,6 +48,8 @@ export function JobsExplorer({
   const [sort, setSort] = React.useState<SortKey>(
     hasResume ? "match" : "newest"
   );
+
+  const [walkInOnly, setWalkInOnly] = React.useState(false);
 
   const jobs = React.useMemo(
     () =>
@@ -111,6 +114,12 @@ export function JobsExplorer({
     const list = jobs.filter((job) => {
       if (location !== "all" && city(job.location) !== location) return false;
       if (level !== "all" && job.experience_level !== level) return false;
+      if (
+        walkInOnly &&
+        !/walk[\s-]?in/i.test(`${job.title} ${job.description}`)
+      ) {
+        return false;
+      }
       if (!q) return true;
       const haystack = [
         job.title,
@@ -130,7 +139,7 @@ export function JobsExplorer({
         ? (b.matchScore ?? 0) - (a.matchScore ?? 0)
         : +new Date(b.posted_date) - +new Date(a.posted_date)
     );
-  }, [jobs, query, location, level, sort]);
+  }, [jobs, query, location, level, sort, walkInOnly]);
 
   return (
     <div className="space-y-4">
@@ -180,6 +189,20 @@ export function JobsExplorer({
               <SelectItem value="newest">Newest</SelectItem>
             </SelectContent>
           </Select>
+          {mode === "jobs" && (
+            <button
+              onClick={() => setWalkInOnly((v) => !v)}
+              aria-pressed={walkInOnly}
+              className={cn(
+                "rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                walkInOnly
+                  ? "border-warm bg-warm/10 text-warm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Walk-in
+            </button>
+          )}
         </div>
       </div>
 
