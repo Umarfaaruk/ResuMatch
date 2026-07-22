@@ -65,6 +65,46 @@ export function isInternship(job: Pick<Job, "title" | "role_title">): boolean {
   );
 }
 
+// Broad role categories, in priority order (first match wins). Powers the
+// category navigation on the jobs board.
+export const JOB_CATEGORIES = [
+  "Frontend",
+  "Backend",
+  "Full Stack",
+  "Data",
+  "AI / ML",
+  "Mobile",
+  "DevOps",
+  "Design",
+  "QA",
+  "Other",
+] as const;
+
+export type JobCategory = (typeof JOB_CATEGORIES)[number];
+
+const CATEGORY_RULES: { cat: JobCategory; re: RegExp }[] = [
+  { cat: "Full Stack", re: /full[\s-]?stack|mern|mean\b/i },
+  { cat: "AI / ML", re: /\b(ml|ai|machine learning|deep learning|data scien|nlp|llm|computer vision)\b|pytorch|tensorflow/i },
+  { cat: "Data", re: /\b(data engineer|data analyst|analytics|etl|bigquery|warehouse|business intelligence|bi\b)|sql|tableau|power bi|spark|airflow/i },
+  { cat: "Frontend", re: /front[\s-]?end|\bui\b|react|angular|vue|next\.?js|css|tailwind/i },
+  { cat: "Backend", re: /back[\s-]?end|\bapi\b|node|django|flask|spring|golang|\bgo\b|rails|php|laravel|microservice/i },
+  { cat: "Mobile", re: /\b(android|ios|mobile|react native|flutter|kotlin|swift)\b/i },
+  { cat: "DevOps", re: /devops|\bsre\b|infrastructure|kubernetes|docker|terraform|cloud engineer|platform engineer/i },
+  { cat: "Design", re: /\b(designer|ux|ui\/ux|product design|figma)\b/i },
+  { cat: "QA", re: /\b(qa|quality assurance|test engineer|sdet|automation test)\b/i },
+];
+
+/** Classify a job into one broad category for the navigation filter. */
+export function categorize(
+  job: Pick<Job, "title" | "role_title" | "required_skills">
+): JobCategory {
+  const hay = `${job.title} ${job.role_title ?? ""} ${(job.required_skills ?? []).join(" ")}`;
+  for (const { cat, re } of CATEGORY_RULES) {
+    if (re.test(hay)) return cat;
+  }
+  return "Other";
+}
+
 /**
  * Score and rank jobs against a parsed resume. Pure JS — no AI cost.
  * Returns the top `limit` jobs with matchScore (0–100) and skill diffs.

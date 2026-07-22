@@ -18,6 +18,7 @@ import { MatchRing } from "@/components/MatchRing";
 import { JobAiActions } from "@/components/JobAiActions";
 import { useToast } from "@/components/ui/toast";
 import { upsertApplication, unsaveJob } from "@/app/actions/applications";
+import { categorize } from "@/lib/matching";
 import type { BrowsableJob, ApplicationStatus } from "@/lib/types";
 
 interface JobCardProps {
@@ -55,6 +56,7 @@ export function JobCard({ job, status: initialStatus }: JobCardProps) {
   const missingSkills = job.missingSkills ?? [];
   const posted = postedAgo(job.posted_date);
   const isNew = daysSince(job.posted_date) <= 2;
+  const category = categorize(job);
 
   function handleSave() {
     startTransition(async () => {
@@ -127,12 +129,20 @@ export function JobCard({ job, status: initialStatus }: JobCardProps) {
               {job.location}
             </span>
           </div>
-          {posted && (
-            <p className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <CalendarDays className="h-3 w-3" />
-              {posted}
-            </p>
-          )}
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <Badge variant="secondary" className="px-2 py-0 text-[11px]">
+              {category}
+            </Badge>
+            <span className="inline-flex items-center gap-1 text-xs capitalize text-muted-foreground">
+              {job.experience_level}
+            </span>
+            {posted && (
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                <CalendarDays className="h-3 w-3" />
+                {posted}
+              </span>
+            )}
+          </div>
         </div>
         {typeof job.matchScore === "number" && (
           <MatchRing score={job.matchScore} />

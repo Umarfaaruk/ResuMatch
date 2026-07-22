@@ -15,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { JobCard } from "@/components/JobCard";
 import { useToast } from "@/components/ui/toast";
-import { isInternship } from "@/lib/matching";
+import { isInternship, categorize, JOB_CATEGORIES } from "@/lib/matching";
 import { cn } from "@/lib/utils";
 import type { ApplicationStatus, BrowsableJob } from "@/lib/types";
 
@@ -50,6 +50,7 @@ export function JobsExplorer({
   );
 
   const [walkInOnly, setWalkInOnly] = React.useState(false);
+  const [category, setCategory] = React.useState<string>("all");
 
   const jobs = React.useMemo(
     () =>
@@ -59,6 +60,16 @@ export function JobsExplorer({
     [allJobs, mode]
   );
   const noun = mode === "internships" ? "internship" : "job";
+
+  // Category counts drive the navigation bar (only show non-empty ones).
+  const categoryCounts = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const j of jobs) {
+      const c = categorize(j);
+      counts.set(c, (counts.get(c) ?? 0) + 1);
+    }
+    return counts;
+  }, [jobs]);
 
   // "What's new since I last looked?" — compare against the newest
   // posted_date the user saw on their previous visit (per mode).
@@ -114,6 +125,7 @@ export function JobsExplorer({
     const list = jobs.filter((job) => {
       if (location !== "all" && city(job.location) !== location) return false;
       if (level !== "all" && job.experience_level !== level) return false;
+      if (category !== "all" && categorize(job) !== category) return false;
       if (
         walkInOnly &&
         !/walk[\s-]?in/i.test(`${job.title} ${job.description}`)
@@ -139,7 +151,7 @@ export function JobsExplorer({
         ? (b.matchScore ?? 0) - (a.matchScore ?? 0)
         : +new Date(b.posted_date) - +new Date(a.posted_date)
     );
-  }, [jobs, query, location, level, sort, walkInOnly]);
+  }, [jobs, query, location, level, sort, walkInOnly, category]);
 
   return (
     <div className="space-y-4">
@@ -204,6 +216,41 @@ export function JobsExplorer({
             </button>
           )}
         </div>
+      </div>
+
+      {/* Category navigation */}
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 no-scrollbar">
+        {[
+          { key: "all", label: "All", count: jobs.length },
+          ...JOB_CATEGORIES.filter((c) => categoryCounts.get(c)).map((c) => ({
+            key: c as string,
+            label: c as string,
+            count: categoryCounts.get(c)!,
+          })),
+        ].map((c) => (
+          <button
+            key={c.key}
+            onClick={() => setCategory(c.key)}
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+              category === c.key
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+            )}
+          >
+            {c.label}
+            <span
+              className={cn(
+                "rounded-full px-1.5 text-xs",
+                category === c.key
+                  ? "bg-primary-foreground/20"
+                  : "bg-secondary text-muted-foreground"
+              )}
+            >
+              {c.count}
+            </span>
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
