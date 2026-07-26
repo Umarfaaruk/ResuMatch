@@ -92,11 +92,15 @@ function toDate(v: string | undefined): string {
 // ── Providers ────────────────────────────────────────────────────────────────
 // Per-provider cooldowns keep the feed fresh while staying far inside free
 // quotas: Adzuna free tier is ~250 calls/day (call at most every 30 min);
-// Remotive is keyless but caches server-side for ~10+ minutes anyway.
+// the keyless feeds are cached server-side anyway, so a few minutes is plenty.
 const ADZUNA_COOLDOWN_MS = 30 * 60 * 1000;
 const REMOTIVE_COOLDOWN_MS = 10 * 60 * 1000;
+const JOBICY_COOLDOWN_MS = 5 * 60 * 1000;
+const ARBEITNOW_COOLDOWN_MS = 5 * 60 * 1000;
 let lastAdzunaAt = 0;
 let lastRemotiveAt = 0;
+let lastJobicyAt = 0;
+let lastArbeitnowAt = 0;
 
 async function fetchAdzuna(): Promise<LiveJob[]> {
   const id = process.env.ADZUNA_APP_ID;
@@ -191,6 +195,128 @@ async function fetchRemotive(): Promise<LiveJob[]> {
     });
 }
 
+/**
+ * Titles we accept from the general-purpose boards — keeps sales, finance
+ * and other non-tech roles out of a board aimed at tech candidates.
+ */
+const TECH_TITLE_RE =
+  /\b(developer|engineer|engineering|programmer|software|frontend|front-end|backend|back-end|full[\s-]?stack|data|devops|sre|cloud|qa|tester|android|ios|mobile|python|java|javascript|typescript|react|angular|node|php|golang|rust|analyst|architect|scientist|machine learning|\bai\b|\bml\b|security|database|sysadmin|it support|technical)\b/i;
+
+/**
+ * Jobicy — keyless feed of remote roles, refreshed daily. Our freshest
+ * source of quality tech listings, and it carries seniority info.
+ */
+async function fetchJobicy(): Promise<LiveJob[]> {
+  if (Date.now() - lastJobicyAt < JOBICY_COOLDOWN_MS) return [];
+  lastJobicyAt = Date.now();
+
+  // industry=dev keeps the feed to engineering roles.
+  const res = await fetch(
+    "https://jobicy.com/api/v2/remote-jobs?count=50&industry=dev",
+    { cache: "no-store" }
+  );
+  if (!res.ok) throw new Error(`Jobicy ${res.status}`);
+  const data = (await res.json()) as {
+    jobs?: {
+      url: string;
+      jobTitle: string;
+      companyName: string;
+      jobGeo?: string;
+      jobLevel?: string;
+      jobIndustry?: string[];
+      jobExcerpt?: string;
+      jobDescription?: string;
+      pubDate?: string;
+    }[];
+  };
+
+  const LEVEL_MAP: Record<string, ExperienceLevel> = {
+    "entry level": "fresher",
+    junior: "junior",
+    midweight: "mid",
+    "mid level": "mid",
+  };
+
+  return (data.jobs ?? [])
+    .filter((j) => j.url && j.jobTitle && TECH_TITLE_RE.test(j.jobTitle))
+    .map((j) => {
+      const description = stripHtml(
+        j.jobExcerpt || j.jobDescription || ""
+      ).slice(0, 1200);
+      const geo = j.jobGeo?.trim();
+      const level =
+        LEVEL_MAP[(j.jobLevel ?? "").trim().toLowerCase()] ??
+        inferLevel(j.jobTitle);
+      return {
+        title: stripHtml(j.jobTitle).trim(),
+        company: j.companyName?.trim() || "Company",
+        location: geo && geo.toLowerCase() !== "anywhere"
+          ? `Remote (${geo})`
+          : "Remote",
+        description,
+        required_skills: extractSkills(`${j.jobTitle} ${description}`),
+        role_title: cleanRole(j.jobTitle),
+        experience_level: level,
+        source_url: j.url,
+        posted_date: toDate(j.pubDate),
+      };
+    });
+}
+
+/**
+ * Arbeitnow — keyless, high-volume board updated continuously. Filtered to
+ * English-language tech roles so the feed stays relevant.
+ */
+async function fetchArbeitnow(): Promise<LiveJob[]> {
+  if (Date.now() - lastArbeitnowAt < ARBEITNOW_COOLDOWN_MS) return [];
+  lastArbeitnowAt = Date.now();
+
+  const res = await fetch("https://www.arbeitnow.com/api/job-board-api", {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Arbeitnow ${res.status}`);
+  const data = (await res.json()) as {
+    data?: {
+      slug: string;
+      url: string;
+      title: string;
+      company_name: string;
+      location?: string;
+      description?: string;
+      tags?: string[];
+      remote?: boolean;
+      created_at?: number;
+    }[];
+  };
+
+  return (data.data ?? [])
+    .filter((j) => j.url && j.title && TECH_TITLE_RE.test(j.title))
+    .map((j) => {
+      const description = stripHtml(j.description ?? "").slice(0, 1200);
+      const tagSkills = (j.tags ?? [])
+        .map((t) => t.trim().toLowerCase())
+        .filter((t) => t && t.length < 24)
+        .slice(0, 8);
+      return {
+        title: stripHtml(j.title).trim(),
+        company: j.company_name?.trim() || "Company",
+        location: j.remote
+          ? `Remote${j.location ? ` (${j.location.trim()})` : ""}`
+          : j.location?.trim() || "Not specified",
+        description,
+        required_skills: tagSkills.length
+          ? tagSkills
+          : extractSkills(`${j.title} ${description}`),
+        role_title: cleanRole(j.title),
+        experience_level: inferLevel(j.title),
+        source_url: j.url,
+        posted_date: j.created_at
+          ? new Date(j.created_at * 1000).toISOString().slice(0, 10)
+          : new Date().toISOString().slice(0, 10),
+      };
+    });
+}
+
 // ── Sync ─────────────────────────────────────────────────────────────────────
 
 /** source_urls of the fabricated seed jobs from 0001_init.sql. */
@@ -229,7 +355,12 @@ export interface SyncResult {
 export async function syncJobs(
   svc: SupabaseClient
 ): Promise<SyncResult> {
-  const results = await Promise.allSettled([fetchAdzuna(), fetchRemotive()]);
+  const results = await Promise.allSettled([
+    fetchAdzuna(),
+    fetchJobicy(),
+    fetchArbeitnow(),
+    fetchRemotive(),
+  ]);
   const live = results.flatMap((r) =>
     r.status === "fulfilled" ? r.value : []
   );
@@ -289,9 +420,9 @@ export async function syncJobs(
     }
   }
 
-  // Purge stale listings (30+ days old) that nobody is tracking, so the
+  // Purge stale listings (14+ days old) that nobody is tracking, so the
   // board only ever shows openings that are still worth applying to.
-  const cutoff = new Date(Date.now() - 30 * 86_400_000)
+  const cutoff = new Date(Date.now() - 14 * 86_400_000)
     .toISOString()
     .slice(0, 10);
   const { data: staleRows } = await svc
